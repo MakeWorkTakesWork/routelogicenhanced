@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Enable_Key_Rotation__c</fullName>
+    <defaultValue>true</defaultValue>
+    <description>Enable automatic key rotation</description>
+    <externalId>false</externalId>
+    <label>Enable Key Rotation</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

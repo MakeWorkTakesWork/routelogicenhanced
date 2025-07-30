@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>Accept</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>CancelEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Clone</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Delete</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Edit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>List</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>New</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>SaveEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Tab</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Stores user-specific preferences and settings for the AI Route Logic application</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>true</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>AI User Preference</label>
+    <nameField>
+        <displayFormat>PREF-{0000}</displayFormat>
+        <label>Preference ID</label>
+        <trackHistory>false</trackHistory>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>AI User Preferences</pluralLabel>
+    <searchLayouts/>
+    <sharingModel>Private</sharingModel>
+    <visibility>Public</visibility>
+    <fields>
+        <fullName>User__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <description>The user this preference record belongs to</description>
+        <externalId>false</externalId>
+        <label>User</label>
+        <referenceTo>User</referenceTo>
+        <relationshipLabel>AI User Preferences</relationshipLabel>
+        <relationshipName>AI_User_Preferences</relationshipName>
+        <required>true</required>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Theme__c</fullName>
+        <defaultValue>'Light'</defaultValue>
+        <description>UI theme preference</description>
+        <externalId>false</externalId>
+        <label>Theme</label>
+        <length>20</length>
+        <required>false</required>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Display_Name__c</fullName>
+        <description>How the user prefers to be addressed</description>
+        <externalId>false</externalId>
+        <label>Display Name</label>
+        <length>100</length>
+        <required>false</required>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Default_Provider__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <description>Default AI provider for new requests</description>
+        <externalId>false</externalId>
+        <label>Default Provider</label>
+        <referenceTo>AI_Provider_Configuration__c</referenceTo>
+        <relationshipLabel>User Preferences</relationshipLabel>
+        <relationshipName>User_Preferences</relationshipName>
+        <required>false</required>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Email_Notifications__c</fullName>
+        <defaultValue>true</defaultValue>
+        <description>Enable email notifications</description>
+        <externalId>false</externalId>
+        <label>Email Notifications</label>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+    <fields>
+        <fullName>In_App_Notifications__c</fullName>
+        <defaultValue>true</defaultValue>
+        <description>Enable in-app notifications</description>
+        <externalId>false</externalId>
+        <label>In-App Notifications</label>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+    <fields>
+        <fullName>Notification_Frequency__c</fullName>
+        <defaultValue>'immediate'</defaultValue>
+        <description>How often to send notification digests</description>
+        <externalId>false</externalId>
+        <label>Notification Frequency</label>
+        <length>20</length>
+        <required>false</required>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Notification_Settings__c</fullName>
+        <description>JSON configuration for notification preferences</description>
+        <externalId>false</externalId>
+        <label>Notification Settings</label>
+        <length>5000</length>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>LongTextArea</type>
+        <visibleLines>3</visibleLines>
+    </fields>
+    <fields>
+        <fullName>Dashboard_Layout__c</fullName>
+        <defaultValue>'Default'</defaultValue>
+        <description>Preferred dashboard layout</description>
+        <externalId>false</externalId>
+        <label>Dashboard Layout</label>
+        <length>50</length>
+        <required>false</required>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Dashboard_Refresh_Interval__c</fullName>
+        <defaultValue>0</defaultValue>
+        <description>Auto-refresh interval in seconds (0 = disabled)</description>
+        <externalId>false</externalId>
+        <label>Dashboard Refresh Interval</label>
+        <precision>6</precision>
+        <required>false</required>
+        <scale>0</scale>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Number</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Dashboard_Widgets__c</fullName>
+        <description>JSON configuration for dashboard widget visibility</description>
+        <externalId>false</externalId>
+        <label>Dashboard Widgets</label>
+        <length>5000</length>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>LongTextArea</type>
+        <visibleLines>3</visibleLines>
+    </fields>
+    <fields>
+        <fullName>Auto_Retry_Enabled__c</fullName>
+        <defaultValue>true</defaultValue>
+        <description>Automatically retry failed requests</description>
+        <externalId>false</externalId>
+        <label>Auto Retry Enabled</label>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+    <fields>
+        <fullName>Max_Retry_Attempts__c</fullName>
+        <defaultValue>3</defaultValue>
+        <description>Maximum number of retry attempts</description>
+        <externalId>false</externalId>
+        <label>Max Retry Attempts</label>
+        <precision>2</precision>
+        <required>false</required>
+        <scale>0</scale>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Number</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Request_Timeout__c</fullName>
+        <defaultValue>30000</defaultValue>
+        <description>Request timeout in milliseconds</description>
+        <externalId>false</externalId>
+        <label>Request Timeout</label>
+        <precision>6</precision>
+        <required>false</required>
+        <scale>0</scale>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Number</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Enable_Debug_Mode__c</fullName>
+        <defaultValue>false</defaultValue>
+        <description>Show additional debug information</description>
+        <externalId>false</externalId>
+        <label>Enable Debug Mode</label>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+    <fields>
+        <fullName>Enable_Beta_Features__c</fullName>
+        <defaultValue>false</defaultValue>
+        <description>Access to beta features</description>
+        <externalId>false</externalId>
+        <label>Enable Beta Features</label>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+    <fields>
+        <fullName>Onboarding_Completed__c</fullName>
+        <defaultValue>false</defaultValue>
+        <description>Whether user has completed onboarding</description>
+        <externalId>false</externalId>
+        <label>Onboarding Completed</label>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+    <fields>
+        <fullName>Onboarding_Data__c</fullName>
+        <description>JSON data for onboarding progress</description>
+        <externalId>false</externalId>
+        <label>Onboarding Data</label>
+        <length>32768</length>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>LongTextArea</type>
+        <visibleLines>3</visibleLines>
+    </fields>
+    <fields>
+        <fullName>Last_Login__c</fullName>
+        <description>Last login timestamp</description>
+        <externalId>false</externalId>
+        <label>Last Login</label>
+        <required>false</required>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>DateTime</type>
+    </fields>
+    <fields>
+        <fullName>Last_Modified__c</fullName>
+        <description>Last time preferences were modified</description>
+        <externalId>false</externalId>
+        <label>Last Modified</label>
+        <required>false</required>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>DateTime</type>
+    </fields>
+    <fields>
+        <fullName>Discovered_Features__c</fullName>
+        <description>Comma-separated list of features the user has discovered</description>
+        <externalId>false</externalId>
+        <label>Discovered Features</label>
+        <length>5000</length>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>LongTextArea</type>
+        <visibleLines>3</visibleLines>
+    </fields>
+    <listViews>
+        <fullName>All</fullName>
+        <filterScope>Everything</filterScope>
+        <label>All</label>
+    </listViews>
+</CustomObject>

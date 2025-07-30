@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>60.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>AI Configuration Manager</masterLabel>
+    <description>Manage AI processing configuration settings and provider configurations</description>
+    <targets>
+        <target>lightning__AppPage</target>
+        <target>lightning__HomePage</target>
+        <target>lightning__Tab</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__AppPage,lightning__HomePage">
+            <property name="showAdvancedSettings" type="Boolean" default="false" 
+                      label="Show Advanced Settings" 
+                      description="Display advanced configuration options"/>
+            <property name="defaultTab" type="String" default="general" 
+                      label="Default Tab" 
+                      datasource="general,providers,rules,validation"
+                      description="Tab to display by default"/>
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

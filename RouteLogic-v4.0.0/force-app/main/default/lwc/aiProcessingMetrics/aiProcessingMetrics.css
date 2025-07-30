@@ -1,0 +1,86 @@
+.summary-stat {
+    text-align: center;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.summary-stat:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0176d3;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #706e6b;
+    margin-top: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.insight-card {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+}
+
+.insight-card:hover {
+    background: #f8f9fa;
+}
+
+/* Data table customizations */
+lightning-datatable {
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .summary-stat {
+        margin-bottom: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+    
+    .insight-card {
+        padding: 0.75rem;
+    }
+}
+
+/* Loading state */
+.slds-is-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Success rate color coding */
+.success-rate-excellent {
+    color: #04844b;
+    font-weight: 600;
+}
+
+.success-rate-good {
+    color: #fe9339;
+    font-weight: 600;
+}
+
+.success-rate-poor {
+    color: #ea001e;
+    font-weight: 600;
+}

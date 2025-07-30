@@ -1,0 +1,135 @@
+<template>
+    <lightning-card title="Processing Metrics & Analytics" icon-name="custom:custom57">
+        <div slot="actions">
+            <lightning-button-group>
+                <lightning-button 
+                    label="Refresh" 
+                    icon-name="utility:refresh" 
+                    onclick={handleRefresh}>
+                </lightning-button>
+                <lightning-button 
+                    label={jobsButtonLabel}
+                    variant={showJobs ? 'brand' : 'neutral'}
+                    onclick={handleToggleJobs}>
+                </lightning-button>
+            </lightning-button-group>
+        </div>
+        
+        <div class="slds-p-horizontal_medium">
+            <!-- Summary Statistics -->
+            <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                    <div class="summary-stat">
+                        <div class="stat-value">{totalMetricsCount}</div>
+                        <div class="stat-label">Processing Batches</div>
+                    </div>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                    <div class="summary-stat">
+                        <div class="stat-value">{totalSuccessfulRequests}</div>
+                        <div class="stat-label">Total Requests</div>
+                    </div>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                    <div class="summary-stat">
+                        <div class="stat-value">{averageSuccessRate}%</div>
+                        <div class="stat-label">Average Success Rate</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Active Jobs Section -->
+            <template if:true={showJobs}>
+                <div class="slds-m-bottom_medium">
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">Active Jobs</h3>
+                    
+                    <template if:true={hasActiveJobs}>
+                        <lightning-datatable 
+                            key-field="jobId"
+                            data={activeJobs}
+                            columns={jobsColumns}
+                            hide-checkbox-column
+                            show-row-number-column>
+                        </lightning-datatable>
+                    </template>
+                    
+                    <template if:false={hasActiveJobs}>
+                        <div class="slds-illustration slds-illustration_small">
+                            <div class="slds-text-longform">
+                                <h3 class="slds-text-heading_medium">No Active Jobs</h3>
+                                <p class="slds-text-body_regular">All processing jobs have completed or there are no jobs currently running.</p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+            
+            <!-- Processing History -->
+            <div class="slds-m-bottom_medium">
+                <h3 class="slds-text-heading_small slds-m-bottom_small">Recent Processing History</h3>
+                
+                <template if:true={hasMetrics}>
+                    <lightning-datatable 
+                        key-field="batchId"
+                        data={metrics}
+                        columns={metricsColumns}
+                        hide-checkbox-column
+                        show-row-number-column
+                        sorted-direction="desc"
+                        sorted-by="createdDate">
+                    </lightning-datatable>
+                </template>
+                
+                <template if:false={hasMetrics}>
+                    <div class="slds-illustration slds-illustration_small">
+                        <div class="slds-text-longform">
+                            <h3 class="slds-text-heading_medium">No Processing History</h3>
+                            <p class="slds-text-body_regular">No bulk processing has been performed in the last 7 days.</p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            
+            <!-- Performance Insights -->
+            <template if:true={hasMetrics}>
+                <div class="slds-box slds-theme_shade">
+                    <h3 class="slds-text-heading_small slds-m-bottom_medium">Performance Insights</h3>
+                    
+                    <div class="slds-grid slds-gutters">
+                        <!-- Best Performing Batch -->
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                            <div class="insight-card">
+                                <lightning-icon icon-name="utility:success" size="small" variant="success" class="slds-m-right_x-small"></lightning-icon>
+                                <div>
+                                    <div class="slds-text-body_small slds-text-color_weak">Best Success Rate</div>
+                                    <div class="slds-text-heading_small">{bestBatch.successRate}%</div>
+                                    <div class="slds-text-body_small">Batch: {bestBatch.batchId}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Fastest Processing -->
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                            <div class="insight-card">
+                                <lightning-icon icon-name="utility:clock" size="small" variant="brand" class="slds-m-right_x-small"></lightning-icon>
+                                <div>
+                                    <div class="slds-text-body_small slds-text-color_weak">Fastest Processing</div>
+                                    <div class="slds-text-heading_small">{fastestBatch.averageTime}ms</div>
+                                    <div class="slds-text-body_small">Batch: {fastestBatch.batchId}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Trend Information -->
+                    <div class="slds-m-top_medium">
+                        <div class="slds-text-body_small slds-text-color_weak">
+                            <lightning-icon icon-name="utility:info" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                            Performance trends are calculated based on the last 10 processing batches.
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

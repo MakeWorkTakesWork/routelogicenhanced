@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>RouteLogic_Security_Admin</name>
+    </customPermissions>
+    <description>Permission set for RouteLogic security administrators who can manage encryption keys and security settings</description>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AI_Encryption_Settings__c.Encryption_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AI_Encryption_Settings__c.Key_Created_Date__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AI_Encryption_Settings__c.Last_Rotation_Date__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>RouteLogic Security Admin</label>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>AI_Encryption_Settings__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <classAccesses>
+        <apexClass>RouteLogicEncryptionUtility</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>SecureKeyVault</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>SecurityKeyManager</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+</PermissionSet>

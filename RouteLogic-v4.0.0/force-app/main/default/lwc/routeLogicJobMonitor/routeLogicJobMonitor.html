@@ -1,0 +1,263 @@
+<template>
+    <lightning-card title="RouteLogic Job Monitor" icon-name="custom:custom108">
+        <div slot="actions">
+            <lightning-button-group>
+                <lightning-button 
+                    label="Refresh" 
+                    icon-name="utility:refresh" 
+                    onclick={handleRefresh}
+                    disabled={isLoading}>
+                </lightning-button>
+                <lightning-button 
+                    label="Process DLQ" 
+                    icon-name="utility:apex" 
+                    onclick={handleProcessDlq}
+                    disabled={isLoading}
+                    title="Process Dead Letter Queue">
+                </lightning-button>
+            </lightning-button-group>
+        </div>
+        
+        <!-- Loading Spinner -->
+        <template if:true={isLoading}>
+            <div class="slds-is-relative slds-p-around_large">
+                <lightning-spinner alternative-text="Loading job monitor..."></lightning-spinner>
+            </div>
+        </template>
+        
+        <!-- Error State -->
+        <template if:true={error}>
+            <div class="slds-p-around_medium">
+                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+                    <span class="slds-assistive-text">Error</span>
+                    <h2>
+                        <lightning-formatted-text value="Error loading job monitor"></lightning-formatted-text>
+                        <template if:true={errorMessage}>
+                            <lightning-formatted-text value={errorMessage}></lightning-formatted-text>
+                        </template>
+                    </h2>
+                </div>
+            </div>
+        </template>
+        
+        <!-- Main Content -->
+        <template if:false={isLoading}>
+            <template if:false={error}>
+                <div class="slds-p-around_medium">
+                    
+                    <!-- Controls -->
+                    <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                        <div class="slds-col slds-size_1-of-3">
+                            <lightning-combobox
+                                name="view"
+                                label="View"
+                                value={selectedView}
+                                placeholder="Select view"
+                                options={viewOptions}
+                                onchange={handleViewChange}>
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            <lightning-combobox
+                                name="timeframe"
+                                label="Time Range"
+                                value={selectedTimeframe}
+                                placeholder="Select timeframe"
+                                options={timeframeOptions}
+                                onchange={handleTimeframeChange}>
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            <div class="slds-form-element">
+                                <label class="slds-form-element__label">Auto Refresh</label>
+                                <div class="slds-form-element__control">
+                                    <lightning-input 
+                                        type="toggle" 
+                                        checked={autoRefresh}
+                                        onchange={handleAutoRefreshToggle}
+                                        message-when-active="On"
+                                        message-when-inactive="Off">
+                                    </lightning-input>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Active Jobs View -->
+                    <template if:true={isActiveView}>
+                        <lightning-card title="Active Jobs" icon-name="utility:spinner">
+                            <template if:true={activeJobs}>
+                                <template if:true={activeJobs.length}>
+                                    <div class="slds-p-around_medium">
+                                        <lightning-datatable
+                                            key-field="jobId"
+                                            data={activeJobs}
+                                            columns={activeJobColumns}
+                                            onrowaction={handleRowAction}
+                                            hide-checkbox-column="true">
+                                        </lightning-datatable>
+                                    </div>
+                                </template>
+                                <template if:false={activeJobs.length}>
+                                    <div class="slds-text-align_center slds-p-around_large">
+                                        <lightning-icon icon-name="utility:success" size="large" variant="success"></lightning-icon>
+                                        <h3 class="slds-m-top_small">No Active Jobs</h3>
+                                        <p>All jobs are completed or idle.</p>
+                                    </div>
+                                </template>
+                            </template>
+                        </lightning-card>
+                    </template>
+                    
+                    <!-- Job History View -->
+                    <template if:true={isHistoryView}>
+                        <lightning-card title="Job History" icon-name="utility:history">
+                            <template if:true={jobHistory}>
+                                <template if:true={jobHistory.length}>
+                                    <div class="slds-p-around_medium">
+                                        <lightning-datatable
+                                            key-field="jobId"
+                                            data={jobHistory}
+                                            columns={jobHistoryColumns}
+                                            hide-checkbox-column="true">
+                                        </lightning-datatable>
+                                    </div>
+                                </template>
+                                <template if:false={jobHistory.length}>
+                                    <div class="slds-text-align_center slds-p-around_large">
+                                        <lightning-icon icon-name="utility:info" size="large"></lightning-icon>
+                                        <h3 class="slds-m-top_small">No Job History</h3>
+                                        <p>No jobs found for the selected time period.</p>
+                                    </div>
+                                </template>
+                            </template>
+                        </lightning-card>
+                    </template>
+                    
+                    <!-- Performance Metrics View -->
+                    <template if:true={isMetricsView}>
+                        <lightning-card title="Performance Metrics" icon-name="utility:chart">
+                            <div class="slds-p-around_medium">
+                                
+                                <!-- Key Metrics Grid -->
+                                <div class="slds-grid slds-gutters slds-m-bottom_large">
+                                    <div class="slds-col slds-size_1-of-4">
+                                        <div class="metric-card">
+                                            <div class="metric-header">Total Jobs</div>
+                                            <div class="metric-value-large">
+                                                <lightning-formatted-number value={formattedJobMetrics.totalJobs}></lightning-formatted-number>
+                                            </div>
+                                            <div class="metric-subtitle">In selected period</div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-4">
+                                        <div class="metric-card">
+                                            <div class="metric-header">Success Rate</div>
+                                            <div class="metric-value-large metric-success">
+                                                <lightning-formatted-text value={formattedJobMetrics.successRate}></lightning-formatted-text>
+                                            </div>
+                                            <div class="metric-subtitle">
+                                                <lightning-formatted-number value={formattedJobMetrics.completedJobs}></lightning-formatted-number> completed
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-4">
+                                        <div class="metric-card">
+                                            <div class="metric-header">Average Duration</div>
+                                            <div class="metric-value-large">
+                                                <lightning-formatted-text value={formattedJobMetrics.averageDuration}></lightning-formatted-text>
+                                            </div>
+                                            <div class="metric-subtitle">Per job completion</div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-4">
+                                        <div class="metric-card">
+                                            <div class="metric-header">Throughput</div>
+                                            <div class="metric-value-large">
+                                                <lightning-formatted-text value={formattedJobMetrics.recordsPerSecond}></lightning-formatted-text>
+                                            </div>
+                                            <div class="metric-subtitle">Records per second</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Status Breakdown -->
+                                <div class="slds-grid slds-gutters">
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <div class="status-card status-success">
+                                            <div class="status-header">
+                                                <lightning-icon icon-name="utility:success" size="small" variant="success"></lightning-icon>
+                                                <span class="slds-m-left_x-small">Completed</span>
+                                            </div>
+                                            <div class="status-count">
+                                                <lightning-formatted-number value={formattedJobMetrics.completedJobs}></lightning-formatted-number>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <div class="status-card status-error">
+                                            <div class="status-header">
+                                                <lightning-icon icon-name="utility:error" size="small" variant="error"></lightning-icon>
+                                                <span class="slds-m-left_x-small">Failed</span>
+                                            </div>
+                                            <div class="status-count">
+                                                <lightning-formatted-number value={formattedJobMetrics.failedJobs}></lightning-formatted-number>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <div class="status-card status-warning">
+                                            <div class="status-header">
+                                                <lightning-icon icon-name="utility:warning" size="small" variant="warning"></lightning-icon>
+                                                <span class="slds-m-left_x-small">Retries</span>
+                                            </div>
+                                            <div class="status-count">
+                                                <lightning-formatted-number value={formattedJobMetrics.retryJobs}></lightning-formatted-number>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </lightning-card>
+                    </template>
+                    
+                    <!-- Dead Letter Queue View -->
+                    <template if:true={isDlqView}>
+                        <lightning-card title="Dead Letter Queue" icon-name="utility:warning">
+                            <div class="slds-p-around_medium">
+                                <div class="slds-text-align_center">
+                                    <lightning-icon icon-name="utility:warning" size="large" variant="warning"></lightning-icon>
+                                    <h3 class="slds-m-top_small">Dead Letter Queue Management</h3>
+                                    <p class="slds-m-bottom_medium">
+                                        Jobs that have exceeded maximum retry attempts are moved here for manual review.
+                                    </p>
+                                    
+                                    <lightning-button 
+                                        label="Process Failed Jobs" 
+                                        variant="brand"
+                                        icon-name="utility:apex"
+                                        onclick={handleProcessDlq}
+                                        disabled={isLoading}>
+                                    </lightning-button>
+                                </div>
+                                
+                                <!-- DLQ Statistics would go here -->
+                                <div class="slds-m-top_large">
+                                    <div class="slds-box slds-theme_shade">
+                                        <h4 class="slds-text-heading_small slds-m-bottom_small">DLQ Statistics</h4>
+                                        <p>Dead letter queue entries: <strong>0</strong></p>
+                                        <p>Last processed: <strong>Never</strong></p>
+                                        <p>Success rate on reprocessing: <strong>N/A</strong></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning-card>
+                    </template>
+                    
+                </div>
+            </template>
+        </template>
+    </lightning-card>
+</template>
+

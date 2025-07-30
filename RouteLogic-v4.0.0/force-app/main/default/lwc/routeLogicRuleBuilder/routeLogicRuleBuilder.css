@@ -1,0 +1,334 @@
+/* Rule Builder Styling */
+
+.condition-row,
+.action-row {
+    background: #fafaf9;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.condition-row:hover,
+.action-row:hover {
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.condition-row {
+    border-left: 4px solid #0176d3;
+}
+
+.action-row {
+    border-left: 4px solid #2e844a;
+}
+
+/* Modal Styling */
+.slds-modal__container {
+    max-width: 80rem;
+    width: 90%;
+}
+
+.slds-modal__content {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Rule Status Indicators */
+.rule-active {
+    color: #2e844a;
+    font-weight: 600;
+}
+
+.rule-inactive {
+    color: #706e6b;
+    font-style: italic;
+}
+
+/* Priority Indicators */
+.priority-1 {
+    color: #ea001e;
+    font-weight: 700;
+}
+
+.priority-2 {
+    color: #fe9339;
+    font-weight: 600;
+}
+
+.priority-3 {
+    color: #0176d3;
+    font-weight: 500;
+}
+
+.priority-4,
+.priority-5 {
+    color: #706e6b;
+    font-weight: 400;
+}
+
+/* Condition and Action Counters */
+.condition-count,
+.action-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    background: #0176d3;
+    color: white;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.action-count {
+    background: #2e844a;
+}
+
+/* Logical Operator Styling */
+.logical-operator {
+    background: #f3f2f2;
+    border: 1px solid #c9c7c5;
+    border-radius: 0.125rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #080707;
+    text-transform: uppercase;
+    letter-spacing: 0.0625rem;
+}
+
+.logical-operator.and {
+    background: #e8f4fd;
+    border-color: #0176d3;
+    color: #0176d3;
+}
+
+.logical-operator.or {
+    background: #fef7e8;
+    border-color: #fe9339;
+    color: #fe9339;
+}
+
+/* Field Type Indicators */
+.field-type-text {
+    color: #0176d3;
+}
+
+.field-type-number {
+    color: #2e844a;
+}
+
+.field-type-date {
+    color: #fe9339;
+}
+
+.field-type-boolean {
+    color: #8b2cf5;
+}
+
+.field-type-reference {
+    color: #ea001e;
+}
+
+/* Drag and Drop Styling */
+.draggable {
+    cursor: move;
+}
+
+.draggable:hover {
+    background: #f4f6f9;
+}
+
+.drop-zone {
+    border: 2px dashed #c9c7c5;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    text-align: center;
+    color: #706e6b;
+    transition: all 0.15s ease-in-out;
+}
+
+.drop-zone.drag-over {
+    border-color: #0176d3;
+    background: #e8f4fd;
+    color: #0176d3;
+}
+
+/* Animation for adding/removing items */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
+.condition-row,
+.action-row {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Validation States */
+.validation-error {
+    border-color: #ea001e;
+    background: #fef7f7;
+}
+
+.validation-success {
+    border-color: #2e844a;
+    background: #f8fdf8;
+}
+
+.validation-warning {
+    border-color: #fe9339;
+    background: #fefaf7;
+}
+
+/* Rule Testing Indicators */
+.test-success {
+    background: #f8fdf8;
+    border: 1px solid #2e844a;
+    color: #2e844a;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.test-error {
+    background: #fef7f7;
+    border: 1px solid #ea001e;
+    color: #ea001e;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.test-warning {
+    background: #fefaf7;
+    border: 1px solid #fe9339;
+    color: #fe9339;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .slds-modal__container {
+        width: 95%;
+        margin: 1rem;
+    }
+    
+    .condition-row .slds-grid,
+    .action-row .slds-grid {
+        flex-direction: column;
+    }
+    
+    .condition-row .slds-col,
+    .action-row .slds-col {
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .condition-row,
+    .action-row {
+        background: #16181d;
+        border-color: #444854;
+        color: #f3f2f2;
+    }
+    
+    .logical-operator {
+        background: #444854;
+        border-color: #706e6b;
+        color: #f3f2f2;
+    }
+    
+    .drop-zone {
+        border-color: #444854;
+        color: #b0adab;
+    }
+    
+    .drop-zone.drag-over {
+        border-color: #0176d3;
+        background: #1b3a57;
+        color: #5eb3f5;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .condition-row,
+    .action-row {
+        border-width: 2px;
+        border-color: #000000;
+    }
+    
+    .condition-row {
+        border-left-color: #0000ff;
+        border-left-width: 6px;
+    }
+    
+    .action-row {
+        border-left-color: #008000;
+        border-left-width: 6px;
+    }
+}
+
+/* Loading States */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+/* Accessibility Enhancements */
+.condition-row:focus,
+.action-row:focus {
+    outline: 2px solid #0176d3;
+    outline-offset: 2px;
+}
+
+.draggable:focus {
+    outline: 2px solid #0176d3;
+    outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+    .slds-modal,
+    .slds-backdrop,
+    .slds-button {
+        display: none !important;
+    }
+    
+    .condition-row,
+    .action-row {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
+

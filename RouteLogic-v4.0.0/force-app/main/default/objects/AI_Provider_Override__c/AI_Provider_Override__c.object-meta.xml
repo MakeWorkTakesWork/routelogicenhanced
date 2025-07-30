@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>Accept</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>CancelEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Clone</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Delete</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Edit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>List</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>New</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>SaveEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Tab</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Stores provider-specific configuration overrides that override AI Provider Settings metadata</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>true</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>AI Provider Override</label>
+    <nameField>
+        <displayFormat>APO-{0000}</displayFormat>
+        <label>Override Number</label>
+        <trackHistory>false</trackHistory>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>AI Provider Overrides</pluralLabel>
+    <searchLayouts/>
+    <sharingModel>ReadWrite</sharingModel>
+    <visibility>Public</visibility>
+    
+    <fields>
+        <fullName>Provider_Metadata_Id__c</fullName>
+        <description>ID of the AI Provider Settings metadata record being overridden</description>
+        <externalId>false</externalId>
+        <label>Provider Metadata ID</label>
+        <length>18</length>
+        <required>true</required>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>true</unique>
+    </fields>
+    
+    <fields>
+        <fullName>Provider_Name__c</fullName>
+        <description>Name of the AI provider</description>
+        <externalId>false</externalId>
+        <label>Provider Name</label>
+        <length>100</length>
+        <required>true</required>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    
+    <fields>
+        <fullName>Is_Active__c</fullName>
+        <defaultValue>true</defaultValue>
+        <description>Whether this provider is currently active</description>
+        <externalId>false</externalId>
+        <label>Is Active</label>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+    
+    <fields>
+        <fullName>API_Endpoint__c</fullName>
+        <description>Override API endpoint URL</description>
+        <externalId>false</externalId>
+        <label>API Endpoint</label>
+        <required>false</required>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Url</type>
+    </fields>
+    
+    <fields>
+        <fullName>Max_Batch_Size__c</fullName>
+        <description>Maximum number of records to process in a single batch</description>
+        <externalId>false</externalId>
+        <label>Max Batch Size</label>
+        <precision>3</precision>
+        <required>false</required>
+        <scale>0</scale>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Number</type>
+        <unique>false</unique>
+    </fields>
+    
+    <fields>
+        <fullName>Timeout_ms__c</fullName>
+        <description>API timeout in milliseconds</description>
+        <externalId>false</externalId>
+        <label>Timeout (ms)</label>
+        <precision>6</precision>
+        <required>false</required>
+        <scale>0</scale>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Number</type>
+        <unique>false</unique>
+    </fields>
+    
+    <fields>
+        <fullName>Priority__c</fullName>
+        <description>Provider priority for load balancing (1-10, lower is higher priority)</description>
+        <externalId>false</externalId>
+        <label>Priority</label>
+        <precision>2</precision>
+        <required>false</required>
+        <scale>0</scale>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Number</type>
+        <unique>false</unique>
+    </fields>
+    
+    <fields>
+        <fullName>Last_Modified_By__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <description>User who last modified this override</description>
+        <externalId>false</externalId>
+        <label>Last Modified By</label>
+        <referenceTo>User</referenceTo>
+        <relationshipLabel>AI Provider Overrides</relationshipLabel>
+        <relationshipName>AI_Provider_Overrides</relationshipName>
+        <required>false</required>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    
+    <fields>
+        <fullName>Last_Modified_Date__c</fullName>
+        <description>Date and time when this override was last modified</description>
+        <externalId>false</externalId>
+        <label>Last Modified Date</label>
+        <required>false</required>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>DateTime</type>
+    </fields>
+    
+    <listViews>
+        <fullName>All</fullName>
+        <columns>NAME</columns>
+        <columns>Provider_Name__c</columns>
+        <columns>Is_Active__c</columns>
+        <columns>API_Endpoint__c</columns>
+        <columns>Max_Batch_Size__c</columns>
+        <columns>Priority__c</columns>
+        <columns>Last_Modified_Date__c</columns>
+        <filterScope>Everything</filterScope>
+        <label>All Provider Overrides</label>
+    </listViews>
+    
+    <listViews>
+        <fullName>Active_Providers</fullName>
+        <columns>Provider_Name__c</columns>
+        <columns>API_Endpoint__c</columns>
+        <columns>Max_Batch_Size__c</columns>
+        <columns>Timeout_ms__c</columns>
+        <columns>Priority__c</columns>
+        <filterScope>Everything</filterScope>
+        <filters>
+            <field>Is_Active__c</field>
+            <operation>equals</operation>
+            <value>1</value>
+        </filters>
+        <label>Active Providers</label>
+    </listViews>
+</CustomObject>

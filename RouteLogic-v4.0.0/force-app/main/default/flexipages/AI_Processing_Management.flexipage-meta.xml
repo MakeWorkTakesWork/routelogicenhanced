@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FlexiPage xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>AI Processing Management Dashboard</description>
+    <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentName>aiBulkProcessingDashboard</componentName>
+                <identifier>aiBulkProcessingDashboard1</identifier>
+            </componentInstance>
+        </itemInstances>
+        <name>main</name>
+        <type>Region</type>
+    </flexiPageRegions>
+    <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentName>aiForceProcessCases</componentName>
+                <identifier>aiForceProcessCases1</identifier>
+            </componentInstance>
+        </itemInstances>
+        <name>sidebar</name>
+        <type>Region</type>
+    </flexiPageRegions>
+    <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentName>aiProcessingMetrics</componentName>
+                <identifier>aiProcessingMetrics1</identifier>
+            </componentInstance>
+        </itemInstances>
+        <name>footer</name>
+        <type>Region</type>
+    </flexiPageRegions>
+    <masterLabel>AI Processing Management</masterLabel>
+    <template>
+        <name>flexipage:appHomeTemplateHeaderTwoColumnsLeftSidebar</name>
+        <properties>
+            <name>enablePageActionPopover</name>
+            <value>true</value>
+        </properties>
+    </template>
+    <type>AppPage</type>
+</FlexiPage>

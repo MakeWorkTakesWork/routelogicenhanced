@@ -1,0 +1,154 @@
+<template>
+    <lightning-card title="AI Bulk Processing Dashboard" icon-name="custom:custom63">
+        <div slot="actions">
+            <lightning-button-group>
+                <lightning-button 
+                    label="Refresh" 
+                    icon-name="utility:refresh" 
+                    onclick={handleRefresh}>
+                </lightning-button>
+                <lightning-button 
+                    label="Advanced" 
+                    variant={showAdvanced ? 'brand' : 'neutral'}
+                    onclick={handleToggleAdvanced}>
+                </lightning-button>
+            </lightning-button-group>
+        </div>
+        
+        <div class="slds-p-horizontal_medium">
+            <!-- Status Overview Cards -->
+            <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_medium">
+                <template for:each={statusCards} for:item="card">
+                    <div key={card.id} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-4">
+                        <div class="slds-box slds-text-align_center status-card">
+                            <lightning-icon icon-name={card.icon} size="medium" class="slds-m-bottom_x-small"></lightning-icon>
+                            <div class="slds-text-heading_large slds-text-color_default">{card.count}</div>
+                            <div class="slds-text-body_small slds-text-color_weak">{card.title}</div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            
+            <!-- Overall Progress -->
+            <div class="slds-m-bottom_medium">
+                <div class="slds-grid slds-grid_align-spread slds-m-bottom_x-small">
+                    <h3 class="slds-text-heading_small">Overall Progress</h3>
+                    <span class="slds-text-body_small">{successRate}% Success Rate</span>
+                </div>
+                <div class="slds-progress-bar" style="height: 8px;">
+                    <span class={progressBarClass} style={progressBarStyle}>
+                        <span class="slds-assistive-text">Progress: {successRate}%</span>
+                    </span>
+                </div>
+                <div class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                    {totalRequests} total requests processed
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                <div class="slds-col">
+                    <lightning-button 
+                        label="Start Bulk Processing" 
+                        variant="brand" 
+                        icon-name="utility:play"
+                        onclick={handleInitiateProcessing}
+                        disabled={isLoading}>
+                    </lightning-button>
+                </div>
+                <div class="slds-col" if:true={retryQueueInfo.hasItems}>
+                    <lightning-button 
+                        label={retryQueueLabel}
+                        variant="neutral" 
+                        icon-name="utility:redo"
+                        onclick={handleProcessRetries}
+                        disabled={isLoading}>
+                    </lightning-button>
+                </div>
+                <div class="slds-col" if:true={activeJobsInfo.hasJobs}>
+                    <lightning-button 
+                        label="Cancel All Jobs" 
+                        variant="destructive-text" 
+                        icon-name="utility:stop"
+                        onclick={handleCancelJobs}
+                        disabled={isLoading}>
+                    </lightning-button>
+                </div>
+            </div>
+            
+            <!-- Advanced Information -->
+            <template if:true={showAdvanced}>
+                <div class="slds-box slds-theme_shade">
+                    <h3 class="slds-text-heading_small slds-m-bottom_medium">Advanced Metrics</h3>
+                    
+                    <div class="slds-grid slds-gutters slds-wrap">
+                        <!-- Active Jobs -->
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                            <div class="metric-item">
+                                <lightning-icon icon-name="utility:settings" size="small" class="slds-m-right_x-small"></lightning-icon>
+                                <div>
+                                    <div class="slds-text-body_small slds-text-color_weak">Active Jobs</div>
+                                    <div class="slds-text-heading_medium">{activeJobsInfo.count}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Retry Queue -->
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                            <div class="metric-item">
+                                <lightning-icon icon-name="utility:redo" size="small" class="slds-m-right_x-small"></lightning-icon>
+                                <div>
+                                    <div class="slds-text-body_small slds-text-color_weak">Retry Queue</div>
+                                    <div class="slds-text-heading_medium">{retryQueueInfo.count}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Average Processing Time -->
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                            <div class="metric-item">
+                                <lightning-icon icon-name="utility:clock" size="small" class="slds-m-right_x-small"></lightning-icon>
+                                <div>
+                                    <div class="slds-text-body_small slds-text-color_weak">Avg Processing Time</div>
+                                    <div class="slds-text-heading_medium">{averageProcessingTime}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System Status -->
+                    <div class="slds-m-top_medium">
+                        <h4 class="slds-text-heading_small slds-m-bottom_small">System Status</h4>
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col">
+                                <lightning-formatted-text 
+                                    value="Auto-refresh: Every 30 seconds"
+                                    class="slds-text-body_small slds-text-color_weak">
+                                </lightning-formatted-text>
+                            </div>
+                            <div class="slds-col">
+                                <template if:true={activeJobsInfo.hasJobs}>
+                                    <lightning-badge label="Processing Active" variant="success"></lightning-badge>
+                                </template>
+                                <template if:false={activeJobsInfo.hasJobs}>
+                                    <lightning-badge label="System Idle" variant="lightest"></lightning-badge>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+            
+            <!-- Loading Overlay -->
+            <template if:true={isLoading}>
+                <div class="slds-spinner_container">
+                    <div role="status" class="slds-spinner slds-spinner_medium">
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

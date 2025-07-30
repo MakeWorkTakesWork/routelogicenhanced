@@ -1,0 +1,317 @@
+<template>
+    <lightning-card title="Performance Dashboard" icon-name="utility:dashboard">
+        <div class="slds-card__body">
+            <!-- Tab Navigation -->
+            <div class="slds-tabs_default">
+                <ul class="slds-tabs_default__nav" role="tablist">
+                    <template for:each={tabs} for:item="tab">
+                        <li class="slds-tabs_default__item" 
+                            key={tab.value}
+                            data-tab={tab.value}
+                            onclick={handleTabClick}>
+                            <a class="slds-tabs_default__link" role="tab">
+                                <lightning-icon icon-name={tab.icon} size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                                {tab.label}
+                            </a>
+                        </li>
+                    </template>
+                </ul>
+                
+                <!-- Cache Management Tab -->
+                <div if:true={isActiveTab.cache} class="slds-tabs_default__content">
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <!-- Cache Stats -->
+                        <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-2">
+                            <div class="slds-box">
+                                <h3 class="slds-text-heading_small slds-m-bottom_medium">Cache Statistics</h3>
+                                
+                                <div class="slds-grid slds-wrap">
+                                    <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                                        <div class="metric-card">
+                                            <div class="metric-value">{cacheStats.hits}</div>
+                                            <div class="metric-label">Cache Hits</div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                                        <div class="metric-card">
+                                            <div class="metric-value">{cacheStats.misses}</div>
+                                            <div class="metric-label">Cache Misses</div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                                        <div class="metric-card">
+                                            <div class={cacheHitRateClass}>
+                                                <div class="metric-value">{cacheStats.hitRate}%</div>
+                                            </div>
+                                            <div class="metric-label">Hit Rate</div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                                        <div class="metric-card">
+                                            <div class="metric-value">{cacheStats.itemCount}</div>
+                                            <div class="metric-label">Cached Items</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="slds-m-top_medium">
+                                    <lightning-button
+                                        label="Clear Cache"
+                                        variant="destructive"
+                                        onclick={handleClearCache}>
+                                    </lightning-button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Cache Configuration -->
+                        <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-2">
+                            <div class="slds-box">
+                                <h3 class="slds-text-heading_small slds-m-bottom_medium">Cache Configuration</h3>
+                                
+                                <div class="slds-form">
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label">Cache Level</label>
+                                        <div class="slds-form-element__control">
+                                            <lightning-combobox
+                                                value={cacheConfig.cacheLevel}
+                                                options={cacheLevelOptions}
+                                                data-field="cacheLevel"
+                                                onchange={handleCacheConfigChange}>
+                                            </lightning-combobox>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label">TTL (seconds)</label>
+                                        <div class="slds-form-element__control">
+                                            <lightning-input
+                                                type="number"
+                                                value={cacheConfig.ttl}
+                                                data-field="ttl"
+                                                onchange={handleCacheConfigChange}>
+                                            </lightning-input>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="slds-form-element">
+                                        <div class="slds-form-element__control">
+                                            <lightning-input
+                                                type="checkbox"
+                                                label="Enable Compression"
+                                                checked={cacheConfig.useCompression}
+                                                data-field="useCompression"
+                                                onchange={handleCacheConfigChange}>
+                                            </lightning-input>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="slds-form-element">
+                                        <div class="slds-form-element__control">
+                                            <lightning-input
+                                                type="checkbox"
+                                                label="Enable Metrics"
+                                                checked={cacheConfig.enableMetrics}
+                                                data-field="enableMetrics"
+                                                onchange={handleCacheConfigChange}>
+                                            </lightning-input>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Cache Visualization -->
+                    <div class="slds-m-top_large">
+                        <canvas class="cache-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Query Optimization Tab -->
+                <div if:true={isActiveTab.query} class="slds-tabs_default__content">
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <!-- Query Analyzer -->
+                        <div class="slds-col slds-size_1-of-1">
+                            <div class="slds-box">
+                                <h3 class="slds-text-heading_small slds-m-bottom_medium">Query Analyzer</h3>
+                                
+                                <div class="slds-form">
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label">Enter SOQL Query</label>
+                                        <div class="slds-form-element__control">
+                                            <lightning-textarea
+                                                value={queryToAnalyze}
+                                                placeholder="SELECT Id, Name FROM Account WHERE..."
+                                                onchange={handleQueryInputChange}>
+                                            </lightning-textarea>
+                                        </div>
+                                    </div>
+                                    
+                                    <lightning-button
+                                        label="Analyze Query"
+                                        variant="brand"
+                                        onclick={handleAnalyzeQuery}
+                                        disabled={isLoading}>
+                                    </lightning-button>
+                                </div>
+                                
+                                <!-- Analysis Results -->
+                                <div if:true={queryAnalysisResult} class="slds-m-top_large">
+                                    <h4 class="slds-text-heading_small">Analysis Results</h4>
+                                    
+                                    <div class="slds-box slds-theme_shade slds-m-top_small">
+                                        <div class="slds-text-title">Optimization Status</div>
+                                        <div class={queryAnalysisResult.isOptimized ? 'slds-text-color_success' : 'slds-text-color_error'}>
+                                            {queryAnalysisResult.isOptimized ? 'Optimized' : 'Needs Optimization'}
+                                        </div>
+                                    </div>
+                                    
+                                    <div if:true={queryAnalysisResult.optimizationSuggestions.length} class="slds-m-top_medium">
+                                        <div class="slds-text-title">Suggestions</div>
+                                        <ul class="slds-list_dotted">
+                                            <template for:each={queryAnalysisResult.optimizationSuggestions} for:item="suggestion">
+                                                <li key={suggestion}>{suggestion}</li>
+                                            </template>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Query Metrics -->
+                        <div class="slds-col slds-size_1-of-1 slds-m-top_large">
+                            <div class="slds-box">
+                                <h3 class="slds-text-heading_small slds-m-bottom_medium">Query Performance by Provider</h3>
+                                
+                                <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                                    <thead>
+                                        <tr class="slds-line-height_reset">
+                                            <th scope="col">Provider</th>
+                                            <th scope="col">Queries</th>
+                                            <th scope="col">Avg Time (ms)</th>
+                                            <th scope="col">Max Time (ms)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template for:each={queryMetrics} for:item="metric">
+                                            <tr key={metric.provider}>
+                                                <td>{metric.provider}</td>
+                                                <td>{metric.queries}</td>
+                                                <td>{metric.avgTime}</td>
+                                                <td>{metric.maxTime}</td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Performance Metrics Tab -->
+                <div if:true={isActiveTab.metrics} class="slds-tabs_default__content">
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <!-- Key Metrics -->
+                        <div class="slds-col slds-size_1-of-1">
+                            <div class="slds-grid slds-wrap">
+                                <div class="slds-col slds-size_1-of-4 slds-p-around_small">
+                                    <div class="metric-card large">
+                                        <div class="metric-value">{performanceMetrics.avgResponseTime}ms</div>
+                                        <div class="metric-label">Avg Response Time</div>
+                                    </div>
+                                </div>
+                                <div class="slds-col slds-size_1-of-4 slds-p-around_small">
+                                    <div class="metric-card large">
+                                        <div class="metric-value">{performanceMetrics.totalQueries}</div>
+                                        <div class="metric-label">Total Queries</div>
+                                    </div>
+                                </div>
+                                <div class="slds-col slds-size_1-of-4 slds-p-around_small">
+                                    <div class="metric-card large">
+                                        <div class="metric-value">{performanceMetrics.cacheHitRate}%</div>
+                                        <div class="metric-label">Cache Hit Rate</div>
+                                    </div>
+                                </div>
+                                <div class="slds-col slds-size_1-of-4 slds-p-around_small">
+                                    <div class="metric-card large">
+                                        <div class="metric-value">{performanceMetrics.errorRate}%</div>
+                                        <div class="metric-label">Error Rate</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Performance Chart -->
+                        <div class="slds-col slds-size_1-of-1 slds-m-top_large">
+                            <canvas class="performance-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Mobile Performance Tab -->
+                <div if:true={isActiveTab.mobile} class="slds-tabs_default__content">
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <div class="slds-col slds-size_1-of-1">
+                            <div class="slds-box">
+                                <h3 class="slds-text-heading_small slds-m-bottom_medium">Mobile Performance Metrics</h3>
+                                
+                                <div class="slds-grid slds-wrap">
+                                    <div class="slds-col slds-size_1-of-4 slds-p-around_small">
+                                        <div class="metric-card">
+                                            <div class="metric-value">{mobileMetrics.avgPayloadSize}</div>
+                                            <div class="metric-label">Avg Payload Size</div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-4 slds-p-around_small">
+                                        <div class="metric-card">
+                                            <div class="metric-value">{mobileMetrics.compressionRate}</div>
+                                            <div class="metric-label">Compression Rate</div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-4 slds-p-around_small">
+                                        <div class="metric-card">
+                                            <div class="metric-value">{mobileMetrics.offlineSyncTime}</div>
+                                            <div class="metric-label">Offline Sync Time</div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-4 slds-p-around_small">
+                                        <div class="metric-card">
+                                            <div class="metric-value">{mobileMetrics.cacheUtilization}</div>
+                                            <div class="metric-label">Cache Utilization</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="slds-m-top_large">
+                                    <h4 class="slds-text-heading_small">Mobile Optimization Tips</h4>
+                                    <ul class="slds-list_dotted slds-m-top_small">
+                                        <li>Enable data compression for slower networks</li>
+                                        <li>Use lazy loading for large datasets</li>
+                                        <li>Implement offline sync for critical data</li>
+                                        <li>Optimize images and media content</li>
+                                        <li>Cache frequently accessed data locally</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div slot="footer">
+            <lightning-button
+                label="Refresh"
+                icon-name="utility:refresh"
+                onclick={handleRefresh}
+                disabled={isLoading}>
+            </lightning-button>
+        </div>
+    </lightning-card>
+    
+    <!-- Loading Spinner -->
+    <template if:true={isLoading}>
+        <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+    </template>
+</template>

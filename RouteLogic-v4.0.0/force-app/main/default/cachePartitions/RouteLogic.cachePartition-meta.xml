@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PlatformCachePartition xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>RouteLogic Enhanced secure key storage and performance cache</description>
+    <isDefaultPartition>false</isDefaultPartition>
+    <masterLabel>RouteLogic</masterLabel>
+    <platformCachePartitionTypes>
+        <allocatedCapacity>10</allocatedCapacity>
+        <allocatedPurchasedCapacity>0</allocatedPurchasedCapacity>
+        <allocatedTrialCapacity>10</allocatedTrialCapacity>
+        <cacheType>Organization</cacheType>
+    </platformCachePartitionTypes>
+</PlatformCachePartition>

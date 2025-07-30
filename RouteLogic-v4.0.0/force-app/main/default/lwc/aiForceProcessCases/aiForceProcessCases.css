@@ -1,0 +1,61 @@
+.case-count-valid {
+    color: #04844b;
+    font-weight: 500;
+}
+
+.case-count-warning {
+    color: #fe9339;
+    font-weight: 500;
+}
+
+.case-count-error {
+    color: #ea001e;
+    font-weight: 500;
+}
+
+.case-count-neutral {
+    color: #706e6b;
+}
+
+/* Form styling */
+lightning-textarea {
+    font-family: 'Salesforce Sans', sans-serif;
+}
+
+/* Processing indicator */
+.processing-indicator {
+    background: #f3f3f3;
+    border-radius: 6px;
+    padding: 1rem;
+    border: 1px solid #e5e5e5;
+}
+
+/* Information box styling */
+.slds-box {
+    border-left: 4px solid #0176d3;
+}
+
+.slds-list_dotted li {
+    margin-bottom: 0.25rem;
+}
+
+/* Button group spacing */
+.slds-grid .slds-col lightning-button {
+    margin-right: 0.5rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .slds-grid {
+        flex-direction: column;
+    }
+    
+    .slds-grid .slds-col {
+        margin-bottom: 0.5rem;
+    }
+    
+    lightning-button {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}

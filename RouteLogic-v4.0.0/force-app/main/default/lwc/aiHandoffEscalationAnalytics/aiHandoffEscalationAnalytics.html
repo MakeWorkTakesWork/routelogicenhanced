@@ -1,0 +1,244 @@
+<template>
+    <lightning-card title="AI Handoff & Escalation Analytics" icon-name="custom:custom63">
+        <div slot="actions">
+            <lightning-button-group>
+                <lightning-button 
+                    label="Refresh" 
+                    icon-name="utility:refresh" 
+                    onclick={refreshData}
+                    disabled={isLoading}>
+                </lightning-button>
+                <lightning-button 
+                    label="Export" 
+                    icon-name="utility:download" 
+                    onclick={handleExportData}>
+                </lightning-button>
+            </lightning-button-group>
+        </div>
+        
+        <!-- Loading Spinner -->
+        <template if:true={isLoading}>
+            <div class="slds-is-relative slds-p-around_large">
+                <lightning-spinner alternative-text="Loading handoff analytics..."></lightning-spinner>
+            </div>
+        </template>
+        
+        <!-- Error State -->
+        <template if:true={error}>
+            <div class="slds-p-around_medium">
+                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+                    <span class="slds-assistive-text">Error</span>
+                    <h2>
+                        <lightning-formatted-text value="Error loading handoff analytics"></lightning-formatted-text>
+                        <template if:true={errorMessage}>
+                            <lightning-formatted-text value={errorMessage}></lightning-formatted-text>
+                        </template>
+                    </h2>
+                </div>
+            </div>
+        </template>
+        
+        <!-- Main Content -->
+        <template if:false={isLoading}>
+            <template if:false={error}>
+                <div class="slds-p-around_medium">
+                    
+                    <!-- Controls -->
+                    <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-combobox
+                                name="timeframe"
+                                label="Time Range"
+                                value={selectedTimeframe}
+                                placeholder="Select timeframe"
+                                options={timeframeOptions}
+                                onchange={handleTimeframeChange}>
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-combobox
+                                name="view"
+                                label="View"
+                                value={selectedView}
+                                placeholder="Select view"
+                                options={viewOptions}
+                                onchange={handleViewChange}>
+                            </lightning-combobox>
+                        </div>
+                    </div>
+                    
+                    <!-- Overview Dashboard -->
+                    <template if:true={isOverviewView}>
+                        
+                        <!-- Key Metrics -->
+                        <div class="slds-grid slds-gutters slds-m-bottom_large">
+                            <div class="slds-col slds-size_1-of-4">
+                                <div class="metric-card">
+                                    <div class="metric-header">Handoff Success Rate</div>
+                                    <div class={successRateClass}>
+                                        <span class="metric-value">{formattedSuccessRate}</span>
+                                    </div>
+                                    <div class="metric-subtitle">
+                                        {handoffMetrics.successfulHandoffs} of {handoffMetrics.totalHandoffs} handoffs
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-4">
+                                <div class="metric-card">
+                                    <div class="metric-header">Average Time-to-Route</div>
+                                    <div class="metric-good">
+                                        <span class="metric-value">{averageTimeToRoute}</span>
+                                    </div>
+                                    <div class="metric-subtitle">From AI to human agent</div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-4">
+                                <div class="metric-card">
+                                    <div class="metric-header">Black Hole Cases</div>
+                                    <div class={blackHoleRateClass}>
+                                        <span class="metric-value">{handoffMetrics.blackHoleHandoffs}</span>
+                                    </div>
+                                    <div class="metric-subtitle">Cases lost in handoff</div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-4">
+                                <div class="metric-card">
+                                    <div class="metric-header">Failed Handoffs</div>
+                                    <div class="metric-warning">
+                                        <span class="metric-value">{handoffMetrics.failedHandoffs}</span>
+                                    </div>
+                                    <div class="metric-subtitle">Handoff failures</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Handoff Flow Visualization -->
+                        <div class="slds-grid slds-gutters slds-m-bottom_large">
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning-card title="Handoff Success Distribution">
+                                    <div class="chart-container">
+                                        <template if:true={handoffSuccessChartData}>
+                                            <!-- Chart component would go here -->
+                                            <div class="chart-placeholder">
+                                                <p>Handoff Success Chart</p>
+                                                <p>Successful: {handoffMetrics.successfulHandoffs}</p>
+                                                <p>Failed: {handoffMetrics.failedHandoffs}</p>
+                                                <p>Black Hole: {handoffMetrics.blackHoleHandoffs}</p>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </lightning-card>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning-card title="Critical Bottlenecks">
+                                    <template if:true={hasBottlenecks}>
+                                        <div class="bottleneck-list">
+                                            <template for:each={criticalBottlenecks} for:item="bottleneck">
+                                                <div key={bottleneck.type} class="bottleneck-item">
+                                                    <div class="slds-grid slds-grid_align-spread">
+                                                        <div class="slds-col">
+                                                            <strong>{bottleneck.type}</strong>
+                                                        </div>
+                                                        <div class="slds-col slds-shrink-none">
+                                                            <span class={bottleneck.severity}>{bottleneck.count}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                    <template if:false={hasBottlenecks}>
+                                        <div class="slds-text-align_center slds-p-around_medium">
+                                            <lightning-icon icon-name="utility:success" size="large" variant="success"></lightning-icon>
+                                            <p class="slds-m-top_small">No critical bottlenecks detected</p>
+                                        </div>
+                                    </template>
+                                </lightning-card>
+                            </div>
+                        </div>
+                        
+                    </template>
+                    
+                    <!-- Black Hole Cases View -->
+                    <template if:true={isBlackHoleView}>
+                        <lightning-card title="Black Hole Cases Analysis">
+                            <template if:true={blackHoleCases}>
+                                <template if:true={blackHoleCases.length}>
+                                    <div class="slds-p-around_medium">
+                                        <lightning-datatable
+                                            key-field="Id"
+                                            data={blackHoleCases}
+                                            columns={blackHoleColumns}
+                                            onrowaction={handleDrillDown}>
+                                        </lightning-datatable>
+                                    </div>
+                                </template>
+                                <template if:false={blackHoleCases.length}>
+                                    <div class="slds-text-align_center slds-p-around_large">
+                                        <lightning-icon icon-name="utility:success" size="large" variant="success"></lightning-icon>
+                                        <h3 class="slds-m-top_small">No Black Hole Cases</h3>
+                                        <p>All handoffs are being processed successfully!</p>
+                                    </div>
+                                </template>
+                            </template>
+                        </lightning-card>
+                    </template>
+                    
+                    <!-- Success Rate Trends View -->
+                    <template if:true={isSuccessView}>
+                        <lightning-card title="Handoff Success Rate Trends">
+                            <div class="chart-container slds-p-around_medium">
+                                <!-- Time series chart would go here -->
+                                <div class="chart-placeholder">
+                                    <p>Success Rate Trend Chart</p>
+                                    <p>Current Success Rate: {formattedSuccessRate}</p>
+                                </div>
+                            </div>
+                        </lightning-card>
+                    </template>
+                    
+                    <!-- Timing Analysis View -->
+                    <template if:true={isTimingView}>
+                        <lightning-card title="Time-to-Route Analysis">
+                            <div class="chart-container slds-p-around_medium">
+                                <!-- Timing analysis chart would go here -->
+                                <div class="chart-placeholder">
+                                    <p>Time-to-Route Analysis</p>
+                                    <p>Average: {averageTimeToRoute}</p>
+                                </div>
+                            </div>
+                        </lightning-card>
+                    </template>
+                    
+                    <!-- Provider Performance View -->
+                    <template if:true={isProvidersView}>
+                        <lightning-card title="AI Provider Handoff Performance">
+                            <div class="chart-container slds-p-around_medium">
+                                <!-- Provider performance comparison -->
+                                <div class="chart-placeholder">
+                                    <p>Provider Performance Comparison</p>
+                                    <p>Ada vs Intercom handoff success rates</p>
+                                </div>
+                            </div>
+                        </lightning-card>
+                    </template>
+                    
+                    <!-- Escalation Patterns View -->
+                    <template if:true={isEscalationView}>
+                        <lightning-card title="Escalation Pattern Analysis">
+                            <div class="chart-container slds-p-around_medium">
+                                <!-- Escalation pattern analysis -->
+                                <div class="chart-placeholder">
+                                    <p>Escalation Pattern Analysis</p>
+                                    <p>Escalation triggers and outcomes</p>
+                                </div>
+                            </div>
+                        </lightning-card>
+                    </template>
+                    
+                </div>
+            </template>
+        </template>
+    </lightning-card>
+</template>
+

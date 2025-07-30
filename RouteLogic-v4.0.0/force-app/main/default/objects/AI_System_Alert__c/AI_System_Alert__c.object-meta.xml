@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>Accept</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>CancelEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Clone</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Delete</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Edit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>List</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>New</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>SaveEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Tab</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Alerts for AI system issues and monitoring</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>true</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <externalSharingModel>ReadWrite</externalSharingModel>
+    <label>AI System Alert</label>
+    <nameField>
+        <displayFormat>ALERT-{0000000}</displayFormat>
+        <label>Alert Number</label>
+        <trackHistory>false</trackHistory>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>AI System Alerts</pluralLabel>
+    <searchLayouts/>
+    <sharingModel>ReadWrite</sharingModel>
+    <visibility>Public</visibility>
+    <fields>
+        <fullName>Alert_Type__c</fullName>
+        <description>Type of alert</description>
+        <externalId>false</externalId>
+        <label>Alert Type</label>
+        <required>true</required>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Picklist</type>
+        <valueSet>
+            <restricted>true</restricted>
+            <valueSetDefinition>
+                <sorted>false</sorted>
+                <value>
+                    <fullName>Provider Health</fullName>
+                    <default>false</default>
+                    <label>Provider Health</label>
+                </value>
+                <value>
+                    <fullName>Performance</fullName>
+                    <default>false</default>
+                    <label>Performance</label>
+                </value>
+                <value>
+                    <fullName>Configuration</fullName>
+                    <default>false</default>
+                    <label>Configuration</label>
+                </value>
+                <value>
+                    <fullName>System Error</fullName>
+                    <default>false</default>
+                    <label>System Error</label>
+                </value>
+                <value>
+                    <fullName>Capacity</fullName>
+                    <default>false</default>
+                    <label>Capacity</label>
+                </value>
+                <value>
+                    <fullName>Scheduler Error</fullName>
+                    <default>false</default>
+                    <label>Scheduler Error</label>
+                </value>
+            </valueSetDefinition>
+        </valueSet>
+    </fields>
+    <fields>
+        <fullName>Severity__c</fullName>
+        <description>Severity level of the alert</description>
+        <externalId>false</externalId>
+        <label>Severity</label>
+        <required>true</required>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Picklist</type>
+        <valueSet>
+            <restricted>true</restricted>
+            <valueSetDefinition>
+                <sorted>false</sorted>
+                <value>
+                    <fullName>Critical</fullName>
+                    <default>false</default>
+                    <label>Critical</label>
+                </value>
+                <value>
+                    <fullName>Error</fullName>
+                    <default>false</default>
+                    <label>Error</label>
+                </value>
+                <value>
+                    <fullName>Warning</fullName>
+                    <default>true</default>
+                    <label>Warning</label>
+                </value>
+                <value>
+                    <fullName>Info</fullName>
+                    <default>false</default>
+                    <label>Info</label>
+                </value>
+            </valueSetDefinition>
+        </valueSet>
+    </fields>
+    <fields>
+        <fullName>Status__c</fullName>
+        <description>Current status of the alert</description>
+        <externalId>false</externalId>
+        <label>Status</label>
+        <required>true</required>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Picklist</type>
+        <valueSet>
+            <restricted>true</restricted>
+            <valueSetDefinition>
+                <sorted>false</sorted>
+                <value>
+                    <fullName>New</fullName>
+                    <default>true</default>
+                    <label>New</label>
+                </value>
+                <value>
+                    <fullName>Acknowledged</fullName>
+                    <default>false</default>
+                    <label>Acknowledged</label>
+                </value>
+                <value>
+                    <fullName>In Progress</fullName>
+                    <default>false</default>
+                    <label>In Progress</label>
+                </value>
+                <value>
+                    <fullName>Resolved</fullName>
+                    <default>false</default>
+                    <label>Resolved</label>
+                </value>
+                <value>
+                    <fullName>Ignored</fullName>
+                    <default>false</default>
+                    <label>Ignored</label>
+                </value>
+            </valueSetDefinition>
+        </valueSet>
+    </fields>
+    <fields>
+        <fullName>Message__c</fullName>
+        <description>Detailed alert message</description>
+        <externalId>false</externalId>
+        <label>Message</label>
+        <length>2000</length>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>LongTextArea</type>
+        <visibleLines>5</visibleLines>
+    </fields>
+    <fields>
+        <fullName>Provider_Name__c</fullName>
+        <description>Name of the provider if alert is provider-specific</description>
+        <externalId>false</externalId>
+        <label>Provider Name</label>
+        <length>255</length>
+        <required>false</required>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Alert_Time__c</fullName>
+        <description>Time when the alert was generated</description>
+        <externalId>false</externalId>
+        <label>Alert Time</label>
+        <required>true</required>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>DateTime</type>
+    </fields>
+    <fields>
+        <fullName>Resolved_Time__c</fullName>
+        <description>Time when the alert was resolved</description>
+        <externalId>false</externalId>
+        <label>Resolved Time</label>
+        <required>false</required>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>DateTime</type>
+    </fields>
+    <fields>
+        <fullName>Resolved_By__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <description>User who resolved the alert</description>
+        <externalId>false</externalId>
+        <label>Resolved By</label>
+        <referenceTo>User</referenceTo>
+        <relationshipName>AI_System_Alerts_Resolved</relationshipName>
+        <required>false</required>
+        <trackHistory>true</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Stack_Trace__c</fullName>
+        <description>Stack trace for error alerts</description>
+        <externalId>false</externalId>
+        <label>Stack Trace</label>
+        <length>32768</length>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>LongTextArea</type>
+        <visibleLines>10</visibleLines>
+    </fields>
+    <fields>
+        <fullName>Resolution_Notes__c</fullName>
+        <description>Notes about how the alert was resolved</description>
+        <externalId>false</externalId>
+        <label>Resolution Notes</label>
+        <length>2000</length>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>LongTextArea</type>
+        <visibleLines>5</visibleLines>
+    </fields>
+    <listViews>
+        <fullName>All_Alerts</fullName>
+        <columns>NAME</columns>
+        <columns>Alert_Type__c</columns>
+        <columns>Severity__c</columns>
+        <columns>Status__c</columns>
+        <columns>Provider_Name__c</columns>
+        <columns>Alert_Time__c</columns>
+        <columns>Message__c</columns>
+        <filterScope>Everything</filterScope>
+        <label>All Alerts</label>
+    </listViews>
+    <listViews>
+        <fullName>Active_Alerts</fullName>
+        <columns>NAME</columns>
+        <columns>Alert_Type__c</columns>
+        <columns>Severity__c</columns>
+        <columns>Status__c</columns>
+        <columns>Provider_Name__c</columns>
+        <columns>Alert_Time__c</columns>
+        <columns>Message__c</columns>
+        <filterScope>Everything</filterScope>
+        <filters>
+            <field>Status__c</field>
+            <operation>notEqual</operation>
+            <value>Resolved,Ignored</value>
+        </filters>
+        <label>Active Alerts</label>
+    </listViews>
+    <listViews>
+        <fullName>Critical_Alerts</fullName>
+        <columns>NAME</columns>
+        <columns>Alert_Type__c</columns>
+        <columns>Status__c</columns>
+        <columns>Provider_Name__c</columns>
+        <columns>Alert_Time__c</columns>
+        <columns>Message__c</columns>
+        <filterScope>Everything</filterScope>
+        <filters>
+            <field>Severity__c</field>
+            <operation>equals</operation>
+            <value>Critical</value>
+        </filters>
+        <filters>
+            <field>Status__c</field>
+            <operation>notEqual</operation>
+            <value>Resolved,Ignored</value>
+        </filters>
+        <label>Critical Alerts</label>
+    </listViews>
+</CustomObject>

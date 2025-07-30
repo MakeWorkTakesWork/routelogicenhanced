@@ -1,0 +1,338 @@
+<template>
+    <lightning-card title={label.title} icon-name="custom:custom83">
+        <lightning-button-group slot="actions">
+            <lightning-button 
+                label="Refresh" 
+                icon-name="utility:refresh" 
+                onclick={handleRefresh}
+                disabled={isLoading}>
+            </lightning-button>
+            <lightning-button 
+                label="Save All" 
+                variant="brand" 
+                icon-name="utility:save" 
+                onclick={handleSaveGeneralSettings}
+                disabled={isSaving}
+                class={hasUnsavedChanges ? 'slds-button_brand' : ''}>
+            </lightning-button>
+        </lightning-button-group>
+        
+        <template if:true={isLoading}>
+            <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+        </template>
+        
+        <template if:false={isLoading}>
+            <lightning-tabset active-tab={activeTab} onchange={handleTabChange}>
+                <!-- General Settings Tab -->
+                <lightning-tab label="General Settings" value="general">
+                    <div class="slds-p-around_medium">
+                        <template for:each={generalSettingsByCategory} for:item="category">
+                            <div key={category.category} class="slds-m-bottom_large">
+                                <h3 class="slds-text-heading_small slds-m-bottom_medium">
+                                    {category.category} Settings
+                                </h3>
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <template for:each={category.settings} for:item="setting">
+                                        <div key={setting.key} class="slds-col slds-size_1-of-2">
+                                            <template if:true={setting.type === 'number'}>
+                                                <lightning-input
+                                                    type="number"
+                                                    label={setting.label}
+                                                    value={setting.value}
+                                                    min={setting.min}
+                                                    max={setting.max}
+                                                    field-level-help={setting.helpText}
+                                                    data-field={setting.key}
+                                                    onchange={handleGeneralSettingChange}>
+                                                </lightning-input>
+                                            </template>
+                                            <template if:true={setting.type === 'boolean'}>
+                                                <lightning-input
+                                                    type="checkbox"
+                                                    label={setting.label}
+                                                    checked={setting.value}
+                                                    field-level-help={setting.helpText}
+                                                    data-field={setting.key}
+                                                    onchange={handleGeneralSettingChange}>
+                                                </lightning-input>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </lightning-tab>
+                
+                <!-- AI Providers Tab -->
+                <lightning-tab label="AI Providers" value="providers">
+                    <div class="slds-p-around_medium">
+                        <!-- Active Providers -->
+                        <div class="slds-m-bottom_large">
+                            <h3 class="slds-text-heading_small slds-m-bottom_medium">
+                                Active Providers ({activeProviders.length})
+                            </h3>
+                            <template for:each={activeProviders} for:item="provider">
+                                <div key={provider.Id} class="slds-box slds-m-bottom_small">
+                                    <div class="slds-grid slds-grid_vertical-align-center">
+                                        <div class="slds-col slds-grow">
+                                            <div class="slds-grid slds-grid_vertical-align-center">
+                                                <lightning-icon 
+                                                    icon-name="utility:connected_apps" 
+                                                    size="small" 
+                                                    variant="success"
+                                                    class="slds-m-right_small">
+                                                </lightning-icon>
+                                                <h4 class="slds-text-heading_small">{provider.Provider_Name__c}</h4>
+                                                <lightning-badge 
+                                                    label="Active" 
+                                                    variant="success"
+                                                    class="slds-m-left_small">
+                                                </lightning-badge>
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-no-flex">
+                                            <lightning-button-group>
+                                                <lightning-button
+                                                    label="Test Connection"
+                                                    icon-name="utility:sync"
+                                                    data-provider-id={provider.Id}
+                                                    onclick={handleTestConnection}>
+                                                </lightning-button>
+                                                <lightning-button-icon
+                                                    icon-name={provider.isExpanded ? 'utility:chevronup' : 'utility:chevrondown'}
+                                                    alternative-text="Toggle details"
+                                                    data-provider-id={provider.Id}
+                                                    onclick={handleProviderToggle}>
+                                                </lightning-button-icon>
+                                            </lightning-button-group>
+                                        </div>
+                                    </div>
+                                    
+                                    <template if:true={provider.isExpanded}>
+                                        <div class="slds-m-top_medium">
+                                            <template if:false={provider.isEditing}>
+                                                <div class="slds-grid slds-wrap">
+                                                    <div class="slds-col slds-size_1-of-2 slds-p-right_small">
+                                                        <p><strong>API Endpoint:</strong> {provider.API_Endpoint__c}</p>
+                                                        <p><strong>Max Batch Size:</strong> {provider.Max_Batch_Size__c}</p>
+                                                        <p><strong>Timeout:</strong> {provider.Timeout_ms__c}ms</p>
+                                                    </div>
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <p><strong>Priority:</strong> {provider.Priority__c}</p>
+                                                        <p><strong>Status:</strong> 
+                                                            <lightning-badge 
+                                                                label={provider.connectionStatus ? provider.connectionStatus : 'Unknown'}
+                                                                variant={provider.connectionStatus === 'success' ? 'success' : 'base'}>
+                                                            </lightning-badge>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div class="slds-m-top_small">
+                                                    <lightning-button
+                                                        label="Edit"
+                                                        icon-name="utility:edit"
+                                                        data-provider-id={provider.Id}
+                                                        onclick={handleProviderEdit}>
+                                                    </lightning-button>
+                                                </div>
+                                            </template>
+                                            
+                                            <template if:true={provider.isEditing}>
+                                                <div class="slds-grid slds-wrap slds-gutters">
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <lightning-input
+                                                            label="API Endpoint"
+                                                            value={provider.API_Endpoint__c}
+                                                            data-provider-id={provider.Id}
+                                                            data-field="API_Endpoint__c"
+                                                            onchange={handleProviderFieldChange}>
+                                                        </lightning-input>
+                                                    </div>
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <lightning-input
+                                                            type="number"
+                                                            label="Max Batch Size"
+                                                            value={provider.Max_Batch_Size__c}
+                                                            min="1"
+                                                            max="200"
+                                                            data-provider-id={provider.Id}
+                                                            data-field="Max_Batch_Size__c"
+                                                            onchange={handleProviderFieldChange}>
+                                                        </lightning-input>
+                                                    </div>
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <lightning-input
+                                                            type="number"
+                                                            label="Timeout (ms)"
+                                                            value={provider.Timeout_ms__c}
+                                                            min="1000"
+                                                            max="120000"
+                                                            data-provider-id={provider.Id}
+                                                            data-field="Timeout_ms__c"
+                                                            onchange={handleProviderFieldChange}>
+                                                        </lightning-input>
+                                                    </div>
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <lightning-input
+                                                            type="number"
+                                                            label="Priority"
+                                                            value={provider.Priority__c}
+                                                            min="1"
+                                                            max="10"
+                                                            data-provider-id={provider.Id}
+                                                            data-field="Priority__c"
+                                                            onchange={handleProviderFieldChange}>
+                                                        </lightning-input>
+                                                    </div>
+                                                    <div class="slds-col slds-size_1-of-1">
+                                                        <lightning-input
+                                                            type="checkbox"
+                                                            label="Active"
+                                                            checked={provider.Is_Active__c}
+                                                            data-provider-id={provider.Id}
+                                                            data-field="Is_Active__c"
+                                                            onchange={handleProviderFieldChange}>
+                                                        </lightning-input>
+                                                    </div>
+                                                </div>
+                                                <div class="slds-m-top_small">
+                                                    <lightning-button-group>
+                                                        <lightning-button
+                                                            label="Save"
+                                                            variant="brand"
+                                                            icon-name="utility:save"
+                                                            data-provider-id={provider.Id}
+                                                            onclick={handleProviderSave}
+                                                            disabled={isSaving}>
+                                                        </lightning-button>
+                                                        <lightning-button
+                                                            label="Cancel"
+                                                            data-provider-id={provider.Id}
+                                                            onclick={handleProviderCancel}>
+                                                        </lightning-button>
+                                                    </lightning-button-group>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                        
+                        <!-- Inactive Providers -->
+                        <template if:true={inactiveProviders.length}>
+                            <div>
+                                <h3 class="slds-text-heading_small slds-m-bottom_medium">
+                                    Inactive Providers ({inactiveProviders.length})
+                                </h3>
+                                <template for:each={inactiveProviders} for:item="provider">
+                                    <div key={provider.Id} class="slds-box slds-m-bottom_small slds-theme_shade">
+                                        <div class="slds-grid slds-grid_vertical-align-center">
+                                            <div class="slds-col slds-grow">
+                                                <div class="slds-grid slds-grid_vertical-align-center">
+                                                    <lightning-icon 
+                                                        icon-name="utility:connected_apps" 
+                                                        size="small" 
+                                                        variant="default"
+                                                        class="slds-m-right_small">
+                                                    </lightning-icon>
+                                                    <h4 class="slds-text-heading_small">{provider.Provider_Name__c}</h4>
+                                                    <lightning-badge 
+                                                        label="Inactive" 
+                                                        variant="default"
+                                                        class="slds-m-left_small">
+                                                    </lightning-badge>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-no-flex">
+                                                <lightning-button
+                                                    label="Activate"
+                                                    icon-name="utility:power"
+                                                    data-provider-id={provider.Id}
+                                                    onclick={handleProviderEdit}>
+                                                </lightning-button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </lightning-tab>
+                
+                <!-- Processing Rules Tab -->
+                <lightning-tab label="Processing Rules" value="rules">
+                    <div class="slds-p-around_medium">
+                        <div class="slds-text-align_center slds-m-vertical_large">
+                            <lightning-icon 
+                                icon-name="utility:rules" 
+                                size="large"
+                                class="slds-m-bottom_small">
+                            </lightning-icon>
+                            <h3 class="slds-text-heading_medium">Processing Rules Configuration</h3>
+                            <p class="slds-m-top_small">Configure case routing rules, priority mappings, and processing conditions</p>
+                            <p class="slds-text-color_weak slds-m-top_x-small">(Coming in Phase 4)</p>
+                        </div>
+                    </div>
+                </lightning-tab>
+                
+                <!-- Validation Tab -->
+                <lightning-tab label="Validation" value="validation">
+                    <div class="slds-p-around_medium">
+                        <div class="slds-box slds-theme_default slds-m-bottom_medium">
+                            <div class="slds-grid slds-grid_vertical-align-center">
+                                <div class="slds-col slds-grow">
+                                    <h3 class="slds-text-heading_small">Configuration Validation Status</h3>
+                                    <p class="slds-m-top_x-small">
+                                        <lightning-badge 
+                                            label={validationStatus}
+                                            variant={validationStatusVariant}>
+                                        </lightning-badge>
+                                    </p>
+                                </div>
+                                <div class="slds-col slds-no-flex">
+                                    <lightning-button
+                                        label="Run Validation"
+                                        icon-name="utility:check"
+                                        variant="brand"
+                                        onclick={runValidation}
+                                        disabled={isLoading}>
+                                    </lightning-button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <template if:true={validationResults}>
+                            <div class="slds-grid slds-wrap slds-gutters">
+                                <template for:each={validationResults} for:item="result">
+                                    <div key={result.category} class="slds-col slds-size_1-of-2">
+                                        <div class="slds-box">
+                                            <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_small">
+                                                <lightning-icon 
+                                                    icon-name={result.success ? 'utility:success' : 'utility:error'}
+                                                    variant={result.success ? 'success' : 'error'}
+                                                    size="small"
+                                                    class="slds-m-right_x-small">
+                                                </lightning-icon>
+                                                <h4 class="slds-text-heading_small">{result.category}</h4>
+                                            </div>
+                                            <p class="slds-text-body_regular">{result.message}</p>
+                                            <template if:true={result.details}>
+                                                <ul class="slds-list_dotted slds-m-top_x-small">
+                                                    <template for:each={result.details} for:item="detail">
+                                                        <li key={detail}>{detail}</li>
+                                                    </template>
+                                                </ul>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </lightning-tab>
+            </lightning-tabset>
+        </template>
+    </lightning-card>
+</template>

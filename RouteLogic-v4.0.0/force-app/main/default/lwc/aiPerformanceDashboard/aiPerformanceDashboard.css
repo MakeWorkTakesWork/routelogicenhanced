@@ -1,0 +1,97 @@
+.metric-card {
+    text-align: center;
+    padding: 1rem;
+    background: #f3f3f3;
+    border-radius: 0.25rem;
+    transition: all 0.2s ease;
+}
+
+.metric-card:hover {
+    background: #e8e8e8;
+    transform: translateY(-2px);
+}
+
+.metric-card.large {
+    padding: 1.5rem;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0176d3;
+    margin-bottom: 0.5rem;
+}
+
+.metric-card.large .metric-value {
+    font-size: 2.5rem;
+}
+
+.metric-label {
+    font-size: 0.875rem;
+    color: #3e3e3c;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.slds-tabs_default__item {
+    cursor: pointer;
+}
+
+.slds-tabs_default__item:hover .slds-tabs_default__link {
+    background-color: #f3f3f3;
+}
+
+.slds-tabs_default__content {
+    padding: 1.5rem;
+}
+
+.cache-chart,
+.performance-chart {
+    width: 100%;
+    height: 300px;
+    border: 1px solid #dddbda;
+    border-radius: 0.25rem;
+    background: #fafaf9;
+}
+
+lightning-textarea {
+    --slds-c-textarea-sizing-min-height: 150px;
+}
+
+.slds-box {
+    background: white;
+    border: 1px solid #dddbda;
+}
+
+.slds-theme_shade {
+    background-color: #f3f3f3;
+}
+
+/* Tab active state */
+.slds-tabs_default__item[data-active="true"] .slds-tabs_default__link {
+    border-bottom: 2px solid #0176d3;
+    color: #0176d3;
+}
+
+/* Loading state */
+:host([data-loading="true"]) {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .metric-value {
+        font-size: 1.5rem;
+    }
+    
+    .metric-card.large .metric-value {
+        font-size: 1.75rem;
+    }
+    
+    .slds-tabs_default__nav {
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}

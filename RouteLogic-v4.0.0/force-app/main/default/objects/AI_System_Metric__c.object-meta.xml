@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>Accept</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>CancelEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Clone</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Delete</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Edit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>List</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>New</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>SaveEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Tab</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Stores system performance and health metrics</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <externalSharingModel>ReadWrite</externalSharingModel>
+    <label>AI System Metric</label>
+    <nameField>
+        <displayFormat>METRIC-{0000000}</displayFormat>
+        <label>Metric Number</label>
+        <trackHistory>false</trackHistory>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>AI System Metrics</pluralLabel>
+    <searchLayouts/>
+    <sharingModel>ReadWrite</sharingModel>
+    <visibility>Public</visibility>
+    <fields>
+        <fullName>Metric_Type__c</fullName>
+        <description>Type of metric being recorded</description>
+        <externalId>false</externalId>
+        <label>Metric Type</label>
+        <required>true</required>
+        <trackTrending>false</trackTrending>
+        <type>Picklist</type>
+        <valueSet>
+            <restricted>true</restricted>
+            <valueSetDefinition>
+                <sorted>false</sorted>
+                <value>
+                    <fullName>System Health</fullName>
+                    <default>false</default>
+                    <label>System Health</label>
+                </value>
+                <value>
+                    <fullName>Provider Performance</fullName>
+                    <default>false</default>
+                    <label>Provider Performance</label>
+                </value>
+                <value>
+                    <fullName>Queue Metrics</fullName>
+                    <default>false</default>
+                    <label>Queue Metrics</label>
+                </value>
+                <value>
+                    <fullName>Processing Time</fullName>
+                    <default>false</default>
+                    <label>Processing Time</label>
+                </value>
+                <value>
+                    <fullName>Error Rate</fullName>
+                    <default>false</default>
+                    <label>Error Rate</label>
+                </value>
+                <value>
+                    <fullName>Throughput</fullName>
+                    <default>false</default>
+                    <label>Throughput</label>
+                </value>
+            </valueSetDefinition>
+        </valueSet>
+    </fields>
+    <fields>
+        <fullName>Metric_Name__c</fullName>
+        <description>Specific name of the metric</description>
+        <externalId>false</externalId>
+        <label>Metric Name</label>
+        <length>255</length>
+        <required>true</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Metric_Value__c</fullName>
+        <description>Numeric value of the metric</description>
+        <externalId>false</externalId>
+        <label>Metric Value</label>
+        <precision>18</precision>
+        <required>true</required>
+        <scale>2</scale>
+        <trackTrending>true</trackTrending>
+        <type>Number</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Provider_Name__c</fullName>
+        <description>Provider name if metric is provider-specific</description>
+        <externalId>false</externalId>
+        <label>Provider Name</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Recorded_At__c</fullName>
+        <description>Time when the metric was recorded</description>
+        <externalId>false</externalId>
+        <label>Recorded At</label>
+        <required>true</required>
+        <trackTrending>false</trackTrending>
+        <type>DateTime</type>
+    </fields>
+    <fields>
+        <fullName>Additional_Data__c</fullName>
+        <description>Additional metric data in JSON format</description>
+        <externalId>false</externalId>
+        <label>Additional Data</label>
+        <length>5000</length>
+        <trackTrending>false</trackTrending>
+        <type>LongTextArea</type>
+        <visibleLines>5</visibleLines>
+    </fields>
+    <listViews>
+        <fullName>All_Metrics</fullName>
+        <columns>NAME</columns>
+        <columns>Metric_Type__c</columns>
+        <columns>Metric_Name__c</columns>
+        <columns>Metric_Value__c</columns>
+        <columns>Provider_Name__c</columns>
+        <columns>Recorded_At__c</columns>
+        <filterScope>Everything</filterScope>
+        <label>All Metrics</label>
+    </listViews>
+    <listViews>
+        <fullName>Recent_Health_Metrics</fullName>
+        <columns>NAME</columns>
+        <columns>Metric_Name__c</columns>
+        <columns>Metric_Value__c</columns>
+        <columns>Recorded_At__c</columns>
+        <filterScope>Everything</filterScope>
+        <filters>
+            <field>Metric_Type__c</field>
+            <operation>equals</operation>
+            <value>System Health</value>
+        </filters>
+        <filters>
+            <field>Recorded_At__c</field>
+            <operation>greaterThan</operation>
+            <value>LAST_N_DAYS:7</value>
+        </filters>
+        <label>Recent Health Metrics</label>
+    </listViews>
+</CustomObject>

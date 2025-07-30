@@ -1,0 +1,66 @@
+.status-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #e5e5e5;
+    transition: all 0.2s ease;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.status-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.progress-success {
+    background-color: #04844b;
+}
+
+.progress-warning {
+    background-color: #fe9339;
+}
+
+.progress-danger {
+    background-color: #ea001e;
+}
+
+.metric-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.slds-spinner_container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Animation for progress bar */
+.slds-progress-bar__value {
+    transition: width 0.5s ease-in-out;
+}
+
+/* Status card icons */
+.status-card lightning-icon {
+    opacity: 0.7;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .slds-col {
+        margin-bottom: 1rem;
+    }
+    
+    .status-card {
+        min-height: 100px;
+    }
+}

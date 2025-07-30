@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Initial_AI_Provider__c</fullName>
+    <description>The AI provider that initiated the handoff request</description>
+    <externalId>false</externalId>
+    <label>Initial AI Provider</label>
+    <length>100</length>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
+

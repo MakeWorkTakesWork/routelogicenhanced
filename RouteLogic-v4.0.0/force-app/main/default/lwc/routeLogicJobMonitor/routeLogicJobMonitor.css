@@ -1,0 +1,257 @@
+/* Job Monitor Styling */
+
+.metric-card {
+    background: #ffffff;
+    border: 1px solid #dddbda;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.metric-card:hover {
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.12);
+}
+
+.metric-header {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #706e6b;
+    text-transform: uppercase;
+    letter-spacing: 0.0625rem;
+    margin-bottom: 0.5rem;
+}
+
+.metric-value-large {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #080707;
+    line-height: 1.2;
+    margin-bottom: 0.25rem;
+}
+
+.metric-subtitle {
+    font-size: 0.75rem;
+    color: #706e6b;
+    margin-top: 0.25rem;
+}
+
+.metric-success {
+    color: #2e844a;
+}
+
+.metric-warning {
+    color: #fe9339;
+}
+
+.metric-error {
+    color: #ea001e;
+}
+
+/* Status Cards */
+.status-card {
+    background: #ffffff;
+    border: 1px solid #dddbda;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    text-align: center;
+    transition: transform 0.15s ease-in-out;
+}
+
+.status-card:hover {
+    transform: translateY(-2px);
+}
+
+.status-success {
+    border-left: 4px solid #2e844a;
+}
+
+.status-warning {
+    border-left: 4px solid #fe9339;
+}
+
+.status-error {
+    border-left: 4px solid #ea001e;
+}
+
+.status-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #706e6b;
+    margin-bottom: 0.5rem;
+}
+
+.status-count {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #080707;
+}
+
+/* Job Status Indicators */
+.job-status-processing {
+    color: #0176d3;
+}
+
+.job-status-completed {
+    color: #2e844a;
+}
+
+.job-status-failed {
+    color: #ea001e;
+}
+
+.job-status-retry {
+    color: #fe9339;
+}
+
+.job-status-queued {
+    color: #706e6b;
+}
+
+/* Progress Indicators */
+.progress-container {
+    width: 100%;
+    background-color: #f3f2f2;
+    border-radius: 0.125rem;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 0.25rem;
+    background-color: #0176d3;
+    transition: width 0.3s ease-in-out;
+}
+
+.progress-bar-success {
+    background-color: #2e844a;
+}
+
+.progress-bar-warning {
+    background-color: #fe9339;
+}
+
+.progress-bar-error {
+    background-color: #ea001e;
+}
+
+/* Real-time Updates Animation */
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.job-updating {
+    animation: pulse 1s infinite;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .metric-value-large {
+        font-size: 1.5rem;
+    }
+    
+    .status-count {
+        font-size: 1.25rem;
+    }
+    
+    .metric-card,
+    .status-card {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .metric-card,
+    .status-card {
+        background: #16181d;
+        border-color: #444854;
+        color: #f3f2f2;
+    }
+    
+    .metric-value-large,
+    .status-count {
+        color: #f3f2f2;
+    }
+    
+    .metric-header,
+    .metric-subtitle,
+    .status-header {
+        color: #b0adab;
+    }
+}
+
+/* Accessibility Enhancements */
+.metric-card:focus,
+.status-card:focus {
+    outline: 2px solid #0176d3;
+    outline-offset: 2px;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .metric-card,
+    .status-card {
+        border-width: 2px;
+        border-color: #000000;
+    }
+    
+    .metric-success {
+        color: #006400;
+    }
+    
+    .metric-warning {
+        color: #ff8c00;
+    }
+    
+    .metric-error {
+        color: #dc143c;
+    }
+}
+
+/* Loading States */
+.loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Custom Scrollbar for Data Tables */
+.slds-scrollable_x::-webkit-scrollbar {
+    height: 8px;
+}
+
+.slds-scrollable_x::-webkit-scrollbar-track {
+    background: #f3f2f2;
+    border-radius: 4px;
+}
+
+.slds-scrollable_x::-webkit-scrollbar-thumb {
+    background: #c9c7c5;
+    border-radius: 4px;
+}
+
+.slds-scrollable_x::-webkit-scrollbar-thumb:hover {
+    background: #b0adab;
+}
+

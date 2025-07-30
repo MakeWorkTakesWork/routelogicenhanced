@@ -1,0 +1,32 @@
+.slds-button_brand {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 112, 210, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(0, 112, 210, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 112, 210, 0);
+    }
+}
+
+.slds-box {
+    transition: all 0.3s ease;
+}
+
+.slds-box:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+lightning-tab {
+    min-height: 400px;
+}
+
+.slds-theme_shade {
+    background-color: #f3f2f2;
+    opacity: 0.8;
+}

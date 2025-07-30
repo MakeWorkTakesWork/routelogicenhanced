@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Enable_Encryption__c</fullName>
+    <defaultValue>true</defaultValue>
+    <description>Enable encryption for sensitive data</description>
+    <externalId>false</externalId>
+    <label>Enable Encryption</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>
