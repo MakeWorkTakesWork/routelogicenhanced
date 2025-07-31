@@ -161,9 +161,30 @@ public with sharing class AIBulkOperationService {
         try {
             result.totalRecords = dataRows.size();
             
+            // Validate object access
+            Schema.SObjectType targetType = Schema.getGlobalDescribe().get(objectType);
+            if (targetType == null) {
+                throw new SecurityException('Invalid object type: ' + objectType);
+            }
+            
+            // Check create access
+            if (!targetType.getDescribe().isCreateable()) {
+                throw new SecurityException('No create access to object: ' + objectType);
+            }
+            
+            // Validate all target fields exist and are creatable
+            Map<String, Schema.SObjectField> fieldMap = targetType.getDescribe().fields.getMap();
+            for (String targetField : fieldMapping.values()) {
+                if (!fieldMap.containsKey(targetField)) {
+                    throw new SecurityException('Invalid field: ' + targetField);
+                }
+                if (!fieldMap.get(targetField).getDescribe().isCreateable()) {
+                    throw new SecurityException('Field is not creatable: ' + targetField);
+                }
+            }
+            
             // Convert data to SObjects
             List<SObject> records = new List<SObject>();
-            Schema.SObjectType targetType = Schema.getGlobalDescribe().get(objectType);
             
             for (Map<String, Object> row : dataRows) {
                 SObject record = targetType.newSObject();
@@ -176,6 +197,25 @@ public with sharing class AIBulkOperationService {
                 }
                 
                 records.add(record);
+            }
+            
+            // Apply field-level security before insert
+            if (!records.isEmpty()) {
+                // Use Security.stripInaccessible to enforce FLS
+                SObjectAccessDecision decision = Security.stripInaccessible(
+                    AccessType.CREATABLE,
+                    records,
+                    true // Enforce FLS
+                );
+                
+                // Get the sanitized records
+                records = decision.getRecords();
+                
+                // Log any stripped fields
+                Map<String, Set<String>> strippedFields = decision.getRemovedFields();
+                if (!strippedFields.isEmpty()) {
+                    System.debug('FLS stripped fields during import: ' + strippedFields);
+                }
             }
             
             // Insert in batches
@@ -244,26 +284,87 @@ public with sharing class AIBulkOperationService {
         String objectType,
         String fieldName,
         Object fieldValue,
-        String whereClause,
+        Map<String, Object> whereParams, // Changed from String whereClause to Map<String, Object>
         BulkConfig config
     ) {
         BulkOperationResult result = new BulkOperationResult();
         Long startTime = DateTime.now().getTime();
         
         try {
-            // Build and execute query
-            String query = 'SELECT Id FROM ' + String.escapeSingleQuotes(objectType);
-            if (String.isNotBlank(whereClause)) {
-                query += ' WHERE ' + whereClause;
+            // Validate object type against schema
+            Schema.SObjectType sObjType = Schema.getGlobalDescribe().get(objectType);
+            if (sObjType == null) {
+                throw new SecurityException('Invalid object type: ' + objectType);
             }
-            query += ' LIMIT 50000';
             
-            List<SObject> records = Database.query(query);
+            // Validate field name exists
+            Schema.SObjectField field = sObjType.getDescribe().fields.getMap().get(fieldName);
+            if (field == null) {
+                throw new SecurityException('Invalid field: ' + fieldName);
+            }
+            
+            // Check field update access
+            if (!field.getDescribe().isUpdateable()) {
+                throw new SecurityException('Field is not updateable: ' + fieldName);
+            }
+            
+            // Build secure query with bind variables
+            String query = 'SELECT Id FROM ' + sObjType.getDescribe().getName();
+            
+            // Prepare bind variables map
+            Map<String, Object> bindVars = new Map<String, Object>();
+            
+            if (whereParams != null && !whereParams.isEmpty()) {
+                query += ' WHERE ';
+                List<String> conditions = new List<String>();
+                
+                // Build conditions with bind variable placeholders
+                Integer paramIndex = 0;
+                for (String paramName : whereParams.keySet()) {
+                    // Validate field exists
+                    if (!sObjType.getDescribe().fields.getMap().containsKey(paramName)) {
+                        throw new SecurityException('Invalid field in where clause: ' + paramName);
+                    }
+                    
+                    String bindVarName = 'param_' + paramIndex;
+                    conditions.add(paramName + ' = :' + bindVarName);
+                    bindVars.put(bindVarName, whereParams.get(paramName));
+                    paramIndex++;
+                }
+                
+                query += String.join(conditions, ' AND ');
+            }
+            
+            query += ' WITH SECURITY_ENFORCED LIMIT 50000';
+            
+            // Execute query with bind variables using AccessLevel.USER_MODE
+            List<SObject> records = Database.queryWithBinds(query, bindVars, AccessLevel.USER_MODE);
             result.totalRecords = records.size();
             
             // Update field value for all records
             for (SObject record : records) {
                 record.put(fieldName, fieldValue);
+            }
+            
+            // Apply field-level security before update
+            if (!records.isEmpty()) {
+                // Use Security.stripInaccessible to enforce FLS
+                SObjectAccessDecision decision = Security.stripInaccessible(
+                    AccessType.UPDATABLE,
+                    records,
+                    true // Enforce FLS
+                );
+                
+                // Get the sanitized records
+                records = decision.getRecords();
+                
+                // Log any stripped fields for debugging
+                Map<String, Set<String>> strippedFields = decision.getRemovedFields();
+                if (!strippedFields.isEmpty()) {
+                    System.debug('FLS stripped fields: ' + strippedFields);
+                    // Optionally log to security audit
+                    // SecurityAuditService.logFieldStripping(strippedFields);
+                }
             }
             
             // Update in batches

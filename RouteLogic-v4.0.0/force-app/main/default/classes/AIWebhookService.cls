@@ -22,6 +22,9 @@ global with sharing class AIWebhookService {
             // Set response headers
             res.addHeader('Content-Type', 'application/json');
             
+            // Set comprehensive security headers
+            setSecurityHeaders(res);
+            
             // Extract provider from URL path
             String provider = extractProviderFromPath(req.requestURI);
             if (String.isBlank(provider)) {
@@ -303,6 +306,42 @@ global with sharing class AIWebhookService {
         public String caseId { get; set; }
         public String correlationId { get; set; }
         public Map<String, Object> data { get; set; }
+    }
+    
+    /**
+     * @description Set comprehensive security headers on the response
+     */
+    private static void setSecurityHeaders(RestResponse res) {
+        // Prevent MIME type sniffing
+        res.addHeader('X-Content-Type-Options', 'nosniff');
+        
+        // Prevent clickjacking
+        res.addHeader('X-Frame-Options', 'DENY');
+        
+        // Enable XSS protection
+        res.addHeader('X-XSS-Protection', '1; mode=block');
+        
+        // Force HTTPS
+        res.addHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        
+        // Content Security Policy
+        res.addHeader('Content-Security-Policy', "default-src 'self'; script-src 'none'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");
+        
+        // Referrer Policy
+        res.addHeader('Referrer-Policy', 'no-referrer');
+        
+        // Permissions Policy (Feature Policy)
+        res.addHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), accelerometer=(), gyroscope=()');
+        
+        // Cache Control for security
+        res.addHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.addHeader('Pragma', 'no-cache');
+        
+        // CORS headers removed - webhooks are server-to-server and don't need CORS
+        // If CORS is needed for specific integrations, use:
+        // res.addHeader('Access-Control-Allow-Origin', 'https://trusted-domain.com');
+        // res.addHeader('Access-Control-Allow-Methods', 'POST');
+        // res.addHeader('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
     }
     
     /**
