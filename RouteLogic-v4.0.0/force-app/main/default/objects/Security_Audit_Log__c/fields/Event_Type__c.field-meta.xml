@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Event_Type__c</fullName>
+    <description>Type of security event being logged</description>
+    <externalId>false</externalId>
+    <label>Event Type</label>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Authentication</fullName>
+                <default>false</default>
+                <label>Authentication</label>
+            </value>
+            <value>
+                <fullName>Authorization</fullName>
+                <default>false</default>
+                <label>Authorization</label>
+            </value>
+            <value>
+                <fullName>Data_Access</fullName>
+                <default>false</default>
+                <label>Data Access</label>
+            </value>
+            <value>
+                <fullName>Data_Modification</fullName>
+                <default>false</default>
+                <label>Data Modification</label>
+            </value>
+            <value>
+                <fullName>Configuration_Change</fullName>
+                <default>false</default>
+                <label>Configuration Change</label>
+            </value>
+            <value>
+                <fullName>Security_Violation</fullName>
+                <default>false</default>
+                <label>Security Violation</label>
+            </value>
+            <value>
+                <fullName>Rate_Limit_Exceeded</fullName>
+                <default>false</default>
+                <label>Rate Limit Exceeded</label>
+            </value>
+            <value>
+                <fullName>Input_Validation_Failure</fullName>
+                <default>false</default>
+                <label>Input Validation Failure</label>
+            </value>
+            <value>
+                <fullName>Encryption_Operation</fullName>
+                <default>false</default>
+                <label>Encryption Operation</label>
+            </value>
+            <value>
+                <fullName>API_Call</fullName>
+                <default>false</default>
+                <label>API Call</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
