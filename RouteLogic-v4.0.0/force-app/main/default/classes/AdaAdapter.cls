@@ -270,12 +270,80 @@ public with sharing class AdaAdapter implements IAIProviderAdapter {
     // Private helper methods (inherited from original implementation)
     
     private String getWebhookSecret() {
-        // Retrieve from protected custom metadata
-        AI_Provider_Settings__mdt settings = AI_Provider_Settings__mdt.getInstance('Ada');
-        if (settings == null || String.isBlank(settings.Webhook_Secret__c)) {
-            throw new AIException('Ada webhook secret not configured in metadata', AIException.CONFIGURATION_ERROR);
+        String cacheKey = 'ada_webhook_secret';
+        
+        // Check Platform Cache first for performance
+        Cache.OrgPartition orgCache = Cache.Org.getPartition('RouteLogic');
+        if (orgCache != null && orgCache.contains(cacheKey)) {
+            return (String) orgCache.get(cacheKey);
         }
-        return settings.Webhook_Secret__c;
+        
+        // Retrieve from secure storage with multiple fallbacks
+        String secret = retrieveSecretSecurely('Ada', 'webhook');
+        
+        // Cache the secret for performance (5 minutes TTL)
+        if (String.isNotBlank(secret) && orgCache != null) {
+            orgCache.put(cacheKey, secret, 300);
+        }
+        
+        return secret;
+    }
+    
+    /**
+     * @description Retrieve secret securely with multiple fallback options
+     */
+    private String retrieveSecretSecurely(String provider, String secretType) {
+        String secretKey = provider + '_' + secretType;
+        
+        // Try SecureKeyVault first (most secure)
+        try {
+            String vaultSecret = SecureKeyVault.getSecret(secretKey);
+            if (String.isNotBlank(vaultSecret)) {
+                return vaultSecret;
+            }
+        } catch (Exception e) {
+            // Log but continue to fallback
+            ErrorLogService.logSecurityWarning('SecureKeyVault retrieval failed for ' + secretKey, e);
+        }
+        
+        // Try Protected Custom Metadata
+        try {
+            AI_Provider_Settings__mdt settings = AI_Provider_Settings__mdt.getInstance(provider);
+            if (settings != null) {
+                String metadataSecret = null;
+                if (secretType == 'webhook' && String.isNotBlank(settings.Webhook_Secret__c)) {
+                    metadataSecret = settings.Webhook_Secret__c;
+                } else if (secretType == 'signing' && String.isNotBlank(settings.Signing_Secret__c)) {
+                    metadataSecret = settings.Signing_Secret__c;
+                }
+                
+                if (String.isNotBlank(metadataSecret)) {
+                    // Decrypt if encrypted
+                    if (metadataSecret.startsWith('ENC:')) {
+                        return RouteLogicEncryptionUtility.decrypt(metadataSecret.substring(4));
+                    }
+                    return metadataSecret;
+                }
+            }
+        } catch (Exception e) {
+            ErrorLogService.logSecurityWarning('Metadata retrieval failed for ' + secretKey, e);
+        }
+        
+        // Log security event for missing secret
+        SecurityAuditService.logSecurityEvent(
+            SecurityAuditService.SecurityEventType.MISSING_SECRET,
+            new Map<String, Object>{
+                'provider' => provider,
+                'secretType' => secretType,
+                'userId' => UserInfo.getUserId()
+            }
+        );
+        
+        throw new AIException(
+            'Unable to retrieve ' + secretType + ' secret for provider: ' + provider + 
+            '. Please ensure secrets are properly configured in SecureKeyVault or Custom Metadata.',
+            AIException.SECURITY_ERROR
+        );
     }
     
     private String getClientId() {
@@ -312,13 +380,8 @@ public with sharing class AdaAdapter implements IAIProviderAdapter {
     }
     
     private String getSigningSecret() {
-        // Retrieve from protected custom metadata
-        AI_Provider_Settings__mdt settings = AI_Provider_Settings__mdt.getInstance('Ada');
-        if (settings == null || String.isBlank(settings.Webhook_Secret__c)) {
-            throw new AIException('Ada signing secret not configured in metadata', AIException.CONFIGURATION_ERROR);
-        }
-        // Using same secret for webhook and signing
-        return settings.Webhook_Secret__c;
+        // Use the same secure retrieval mechanism
+        return retrieveSecretSecurely('Ada', 'signing');
     }
     
     private Boolean validateResponseSignature(String body, String signature) {
@@ -389,19 +452,61 @@ public with sharing class AdaAdapter implements IAIProviderAdapter {
     }
     
     private String maskPersonNames(String input) {
-        // This would integrate with Ada's entity recognition
-        // For now, use simple pattern matching
-        List<String> commonNames = new List<String>{
-            'John', 'Jane', 'Smith', 'Johnson', 'Williams'
-            // In production, this would use a more sophisticated approach
-        };
+        // Use Custom Metadata for flexible PII pattern management
+        // This approach allows admins to update patterns without code changes
+        List<PII_Pattern__mdt> namePatterns = getPIIPatterns('PersonName');
         
         String masked = input;
-        for (String name : commonNames) {
-            masked = masked.replaceAll('\\b' + name + '\\b', '[NAME]');
+        
+        // Apply each pattern from metadata
+        for (PII_Pattern__mdt pattern : namePatterns) {
+            if (pattern.Is_Active__c && String.isNotBlank(pattern.Pattern__c)) {
+                String replacement = String.isNotBlank(pattern.Replacement_Pattern__c) ? 
+                                   pattern.Replacement_Pattern__c : '[NAME_MASKED]';
+                masked = masked.replaceAll(pattern.Pattern__c, replacement);
+            }
+        }
+        
+        // If Einstein Platform Services available, use advanced NLP
+        if (AIProviderHealthCheckService.isServiceAvailable('Einstein')) {
+            try {
+                masked = applyEinsteinEntityRecognition(masked, 'PERSON');
+            } catch (Exception e) {
+                // Log but don't fail - fallback to pattern matching
+                ErrorLogService.logWarning('Einstein entity recognition unavailable', e);
+            }
         }
         
         return masked;
+    }
+    
+    // Cache PII patterns for performance
+    private static Map<String, List<PII_Pattern__mdt>> piiPatternCache = new Map<String, List<PII_Pattern__mdt>>();
+    
+    private List<PII_Pattern__mdt> getPIIPatterns(String patternType) {
+        if (piiPatternCache.containsKey(patternType)) {
+            return piiPatternCache.get(patternType);
+        }
+        
+        List<PII_Pattern__mdt> patterns = [
+            SELECT Pattern__c, Replacement_Pattern__c, Pattern_Type__c, 
+                   Is_Active__c, Priority__c, Description__c
+            FROM PII_Pattern__mdt
+            WHERE Pattern_Type__c = :patternType
+            AND Is_Active__c = true
+            WITH SECURITY_ENFORCED
+            ORDER BY Priority__c DESC
+            LIMIT 100
+        ];
+        
+        piiPatternCache.put(patternType, patterns);
+        return patterns;
+    }
+    
+    private String applyEinsteinEntityRecognition(String text, String entityType) {
+        // This would integrate with Einstein Language APIs
+        // Placeholder for actual implementation
+        return text;
     }
     
     // Inner classes

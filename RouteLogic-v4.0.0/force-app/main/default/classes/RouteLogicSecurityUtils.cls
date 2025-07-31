@@ -271,6 +271,40 @@ public with sharing class RouteLogicSecurityUtils {
             System.debug(LoggingLevel.ERROR, 'Object access check failed: ' + e.getMessage());
             return false;
         }
+    }    /**
+     * @description Check if user has read access to object
+     * @param objectName The SObject API name
+     * @return True if user has read access
+     */
+    public static Boolean hasReadAccess(String objectName) {
+        return hasObjectAccess(objectName, AccessType.READABLE);
+    }
+    
+    /**
+     * @description Check if user has create access to object
+     * @param objectName The SObject API name
+     * @return True if user has create access
+     */
+    public static Boolean hasCreateAccess(String objectName) {
+        return hasObjectAccess(objectName, AccessType.CREATABLE);
+    }
+    
+    /**
+     * @description Check if user has update access to object
+     * @param objectName The SObject API name
+     * @return True if user has update access
+     */
+    public static Boolean hasUpdateAccess(String objectName) {
+        return hasObjectAccess(objectName, AccessType.UPDATABLE);
+    }
+    
+    /**
+     * @description Check if user has delete access to object
+     * @param objectName The SObject API name
+     * @return True if user has delete access
+     */
+    public static Boolean hasDeleteAccess(String objectName) {
+        return hasObjectAccess(objectName, AccessType.DELETABLE);
     }
     
     /**
