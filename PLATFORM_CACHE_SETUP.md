@@ -1,247 +1,260 @@
-# Platform Cache Setup Guide for RouteLogic
+# Platform Cache Setup Guide for RouteLogic Enhanced v4.0.0
 
 ## Overview
-Platform Cache is required for RouteLogic's secure key storage (SecureKeyVault). This guide walks through setup and validation.
+This guide provides instructions for configuring Platform Cache partitions required for RouteLogic Enhanced's security and performance features.
 
-## Setup Steps
+## Prerequisites
+- Salesforce org with Platform Cache enabled
+- Minimum 25MB Platform Cache capacity (trial or purchased)
+- System Administrator permissions
+- Salesforce CLI installed and authenticated
 
-### 1. Enable Platform Cache (if not already enabled)
+## Cache Partition Architecture
 
-1. Go to **Setup**
-2. Search for "Platform Cache" in Quick Find
-3. Click **Platform Cache**
+| Partition Name | Size | Purpose | TTL |
+|---------------|------|---------|-----|
+| **RouteLogic** | 10MB | Main cache, configuration, session data | 1 hour |
+| **RateLimits** | 5MB | Rate limiting counters, DDoS protection | 5-60 min |
+| **KeyMetadata** | 5MB | Encryption keys, secure tokens | 1 hour |
+| **AIProcessing** | 5MB | AI processing temp data, responses | 15 min |
 
-If you see a message about Platform Cache not being enabled:
-- Contact Salesforce Support to enable Platform Cache for your org
-- Or enable it through a scratch org config file
+## Automated Deployment (Recommended)
 
-### 2. Create the RouteLogic Partition
-
-1. In **Setup → Platform Cache**
-2. Click **New Platform Cache Partition**
-3. Configure as follows:
-
-   | Field | Value |
-   |-------|-------|
-   | **Label** | RouteLogic |
-   | **Name** | RouteLogic |
-   | **Description** | Secure key storage for RouteLogic Enhanced |
-   | **Org Capacity Allocation** | 10 MB (minimum) |
-   | **Session Capacity** | 0 MB (not needed) |
-   | **Default Partition** | No |
-
-4. Click **Save**
-
-### 3. Verify Partition Status
-
-After creation, verify:
-- Status shows as **Active**
-- Capacity shows your allocation (e.g., "10 MB of 10 MB used")
-
-## Testing Platform Cache
-
-### Quick Test (Developer Console)
-
-1. Open **Developer Console**
-2. Click **Debug → Open Execute Anonymous Window**
-3. Run this quick test:
-
-```apex
-// Quick Platform Cache Test
-try {
-    Cache.OrgPartition orgPart = Cache.Org.getPartition('RouteLogic');
-    if (orgPart != null) {
-        // Test write
-        orgPart.put('test_key', 'test_value', 300);
-        
-        // Test read
-        String value = (String) orgPart.get('test_key');
-        
-        if ('test_value'.equals(value)) {
-            System.debug('✅ Platform Cache is working!');
-        } else {
-            System.debug('❌ Cache read failed');
-        }
-        
-        // Clean up
-        orgPart.remove('test_key');
-    } else {
-        System.debug('❌ RouteLogic partition not found');
-    }
-} catch (Exception e) {
-    System.debug('❌ Error: ' + e.getMessage());
-}
-```
-
-### Comprehensive Test
-
-Run the full test script:
-
+### Step 1: Deploy Metadata
 ```bash
-sfdx force:apex:execute -f scripts/test-platform-cache.apex -u YOUR_ORG
+# Navigate to project directory
+cd /Users/johnsweazey/routelogicenhanced4.0.0
+
+# Run deployment script
+./scripts/deploy-cache-partitions.sh <your-org-alias>
+
+# Example:
+./scripts/deploy-cache-partitions.sh mysandbox
 ```
 
-## Expected Test Output
-
-### ✅ Successful Configuration
-```
-==== PLATFORM CACHE TEST STARTING ====
-
---- Test 1: Platform Cache Availability ---
-✓ Platform Cache is ENABLED
-✓ Partition "RouteLogic" is AVAILABLE
-
---- Test 2: Partition Capacity ---
-✓ Partition has available capacity
-
---- Test 3: Basic Cache Operations ---
-✓ String storage: PASS
-
---- Test 4: Complex Object Storage ---
-✓ Complex object storage: PASS
-
---- Test 5: TTL Testing ---
-✓ Immediate retrieval: PASS
-
---- Test 6: Concurrent Access ---
-✓ Concurrent access: PASS (final value: value_4)
-
---- Test 7: SecureKeyVault Key Patterns ---
-✓ SecureKeyVault pattern: PASS
-
-==== PLATFORM CACHE TEST SUMMARY ====
-✅ ALL TESTS PASSED!
-Platform Cache is properly configured for RouteLogic.
+### Step 2: Verify Deployment
+```bash
+# Run test script to verify cache functionality
+sfdx force:apex:execute -f scripts/test-cache.apex -u <your-org-alias>
 ```
 
-### ❌ Common Issues
+## Manual Configuration (Alternative)
 
-#### Partition Not Found
-```
-✗ Partition "RouteLogic" NOT FOUND
-Action: Go to Setup → Platform Cache → New Platform Cache Partition
-```
-**Solution**: Create the partition following step 2 above
+### Step 1: Check Available Capacity
+1. Navigate to **Setup** → **Platform Cache**
+2. Check "Org Cache" capacity
+3. Ensure at least 25MB available
 
-#### Insufficient Capacity
-```
-✗ Partition capacity issue: Cache capacity exceeded
-```
-**Solution**: Increase org capacity allocation in partition settings
+If no capacity available:
+- Request trial cache (10MB free for Developer Edition)
+- Purchase Platform Cache add-on
+- Contact Salesforce support for sandbox allocation
 
-#### Platform Cache Not Enabled
-```
-✗ Platform Cache ERROR: Platform Cache is not enabled for this org
-```
-**Solution**: Contact Salesforce Support to enable Platform Cache
+### Step 2: Create Partitions Manually
 
-## How RouteLogic Uses Platform Cache
+#### Partition 1: RouteLogic (Main)
+1. Click **New Platform Cache Partition**
+2. Enter:
+   - **Label**: RouteLogic
+   - **Name**: RouteLogic
+   - **Description**: Main cache partition for RouteLogic Enhanced
+   - **Default Partition**: ✓ Check
+   - **Org Allocation**: 10MB
 
-### 1. Secure Key Storage (SecureKeyVault)
-- Stores derived encryption keys (not raw keys)
-- Keys are prefixed with "SecureKey."
-- Default TTL: 3600 seconds (1 hour)
+#### Partition 2: RateLimits
+1. Click **New Platform Cache Partition**
+2. Enter:
+   - **Label**: RateLimits
+   - **Name**: RateLimits
+   - **Description**: Rate limiting and DDoS protection
+   - **Default Partition**: ✗ Uncheck
+   - **Org Allocation**: 5MB
 
-### 2. Cache Structure
+#### Partition 3: KeyMetadata
+1. Click **New Platform Cache Partition**
+2. Enter:
+   - **Label**: KeyMetadata
+   - **Name**: KeyMetadata
+   - **Description**: Secure key and metadata storage
+   - **Default Partition**: ✗ Uncheck
+   - **Org Allocation**: 5MB
+
+#### Partition 4: AIProcessing
+1. Click **New Platform Cache Partition**
+2. Enter:
+   - **Label**: AIProcessing
+   - **Name**: AIProcessing
+   - **Description**: AI processing temporary data
+   - **Default Partition**: ✗ Uncheck
+   - **Org Allocation**: 5MB
+
+### Step 3: Validate Configuration
+Execute in Developer Console:
 ```apex
-// Example cache entry for master encryption key
-Key: "SecureKey.Security_Master_Encryption_Key"
-Value: {
-    "derivedKey": "base64_encoded_derived_key",
-    "salt": "base64_encoded_salt",
-    "cachedTime": "2025-01-28T10:30:00.000Z"
+// Check partition availability
+Cache.OrgPartition partition = Cache.Org.getPartition('RouteLogic');
+System.debug('RouteLogic partition: ' + partition);
+System.debug('Capacity: ' + partition.getCapacity());
+
+// Test basic operations
+partition.put('test_key', 'test_value', 60);
+Object value = partition.get('test_key');
+System.debug('Test value: ' + value);
+```
+
+## Troubleshooting
+
+### Issue: "Platform Cache is not available"
+**Solution**: 
+- Enable Platform Cache in Setup → Platform Cache
+- Ensure org has cache capacity allocated
+
+### Issue: "Insufficient capacity"
+**Solution**:
+- Reduce partition sizes proportionally:
+  - RouteLogic: 5MB
+  - RateLimits: 2MB
+  - KeyMetadata: 2MB
+  - AIProcessing: 1MB
+
+### Issue: "Namespace not found"
+**Solution**:
+- For unmanaged packages, remove namespace prefix
+- Use CacheUtils class which handles namespaces dynamically
+
+### Issue: "Partition not found"
+**Solution**:
+```apex
+// List all available partitions
+List<Cache.OrgPartition> partitions = Cache.Org.getPartitions();
+for (Cache.OrgPartition p : partitions) {
+    System.debug('Partition: ' + p.getName());
 }
 ```
 
-### 3. Performance Benefits
-- Reduces key derivation operations
-- Improves encryption/decryption speed
-- Minimizes database queries
+## Performance Considerations
 
-## Monitoring Platform Cache
+### Cache Key Design
+- Use consistent naming: `{type}_{identifier}_{timestamp}`
+- Example: `USER_005xx000001_API_CALL`
+
+### TTL Strategy
+- Short (5 min): Rate limits, real-time data
+- Medium (1 hour): Configuration, secrets
+- Long (24 hours): Static metadata
+
+### Cache Invalidation
+```apex
+// Clear specific key
+CacheUtils.remove('RouteLogic', 'my_key');
+
+// Clear by pattern (implement in CacheUtils if needed)
+for (String key : keysToRemove) {
+    CacheUtils.remove('RouteLogic', key);
+}
+```
+
+## Monitoring
 
 ### View Cache Usage
-1. Go to **Setup → Platform Cache**
-2. Click on "RouteLogic" partition
-3. View usage statistics
-
-### Debug Cache Operations
 ```apex
-// Check what's in cache (for debugging only)
-Cache.OrgPartition orgPart = Cache.Org.getPartition('RouteLogic');
-
-// Get all keys (not available in standard API, this is pseudo-code)
-// In practice, track keys in a custom object or setting
+Map<String, Object> info = CacheUtils.getCapacity('RouteLogic');
+System.debug('Usage: ' + info.get('percentUsed') + '%');
+System.debug('Keys: ' + info.get('numKeys'));
 ```
 
-## Best Practices
+### Set Up Alerts
+1. Create scheduled Apex to monitor usage
+2. Send alert when usage > 80%
+3. Log cache misses for optimization
 
-1. **Capacity Planning**
-   - Start with 10MB minimum
-   - Monitor usage weekly
-   - Increase before reaching 80% capacity
+## Security Best Practices
 
-2. **Key Management**
-   - Use consistent key naming: "SecureKey.{keyName}"
-   - Set appropriate TTLs (not too short, not too long)
-   - Clean up expired entries periodically
+1. **Encryption**: Always encrypt sensitive data before caching
+   ```apex
+   Blob encrypted = Crypto.encryptWithManagedIV('AES256', key, data);
+   CacheUtils.put('KeyMetadata', 'secure_key', encrypted, 3600);
+   ```
 
-3. **Error Handling**
-   - Always wrap cache operations in try-catch
-   - Have fallback logic when cache is unavailable
-   - Log cache misses for monitoring
+2. **Access Control**: Use permission sets to control cache access
+   ```apex
+   if (!FeatureManagement.checkPermission('Cache_Admin')) {
+       throw new SecurityException('Insufficient permissions');
+   }
+   ```
 
-4. **Security**
-   - Never store raw encryption keys
-   - Use derived keys with salts
-   - Clear sensitive data when done
+3. **Audit Logging**: Log all cache operations for sensitive data
+   ```apex
+   SecurityAuditService.logCacheAccess('KeyMetadata', 'retrieve', keyName);
+   ```
 
-## Troubleshooting Script
+## Testing Cache Configuration
 
-Run this to diagnose issues:
-
+### Unit Test Example
 ```apex
-// Platform Cache Diagnostic Script
-System.debug('=== PLATFORM CACHE DIAGNOSTICS ===');
-
-// Check 1: Platform Cache enabled?
-try {
-    Cache.Org.getPartition('test');
-    System.debug('✓ Platform Cache is enabled');
-} catch (Exception e) {
-    System.debug('✗ Platform Cache not enabled: ' + e.getMessage());
-}
-
-// Check 2: RouteLogic partition exists?
-try {
-    Cache.OrgPartition rp = Cache.Org.getPartition('RouteLogic');
-    System.debug('✓ RouteLogic partition ' + (rp != null ? 'exists' : 'not found'));
-} catch (Exception e) {
-    System.debug('✗ Error accessing RouteLogic partition: ' + e.getMessage());
-}
-
-// Check 3: Can write to cache?
-try {
-    Cache.OrgPartition rp = Cache.Org.getPartition('RouteLogic');
-    if (rp != null) {
-        rp.put('diagnostic_test', 'value', 60);
-        rp.remove('diagnostic_test');
-        System.debug('✓ Cache write/delete successful');
+@isTest
+private class CacheConfigTest {
+    @isTest
+    static void testAllPartitions() {
+        // Test each partition
+        List<String> partitions = new List<String>{
+            'RouteLogic', 'RateLimits', 'KeyMetadata', 'AIProcessing'
+        };
+        
+        for (String partitionName : partitions) {
+            // Test store and retrieve
+            String key = 'test_' + partitionName;
+            String value = 'value_' + partitionName;
+            
+            Boolean stored = CacheUtils.put(partitionName, key, value, 60);
+            System.assert(stored || Test.isRunningTest(), 
+                'Should store in ' + partitionName);
+            
+            Object retrieved = CacheUtils.get(partitionName, key);
+            System.assertEquals(value, retrieved, 
+                'Should retrieve from ' + partitionName);
+        }
     }
-} catch (Exception e) {
-    System.debug('✗ Cache write failed: ' + e.getMessage());
 }
-
-System.debug('=== END DIAGNOSTICS ===');
 ```
 
 ## Next Steps
 
-After Platform Cache is configured:
+After cache setup:
+1. Deploy RouteLogic Enhanced application code
+2. Configure Custom Metadata Types
+3. Set up Platform Events
+4. Run security validation tests
+5. Monitor cache performance for first 24 hours
 
-1. Test SecureKeyVault functionality
-2. Verify encryption/decryption with cache
-3. Monitor cache hit rates
-4. Set up cache warming strategies
+## Support
 
-Platform Cache is now ready for RouteLogic's secure key management!
+For issues with Platform Cache setup:
+- Salesforce Support: Create a case for cache allocation
+- RouteLogic Team: Review application logs for cache errors
+- Documentation: Check Salesforce Platform Cache documentation
+
+## Appendix: Cache Capacity Planning
+
+### Calculation Formula
+```
+Required Capacity = (Concurrent Users × Avg Keys per User × Avg Key Size) + Buffer
+
+Example:
+- 100 concurrent users
+- 10 keys per user
+- 1KB average key size
+- 20% buffer
+= (100 × 10 × 1KB) × 1.2 = 1.2MB
+```
+
+### Recommended Minimums by Org Size
+- Small (< 100 users): 10MB total
+- Medium (100-1000 users): 25MB total
+- Large (1000+ users): 50MB+ total
+
+---
+
+**Last Updated**: January 31, 2025
+**Version**: 4.0.0
+**Author**: RouteLogic Enhanced Team
