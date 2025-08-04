@@ -100,26 +100,27 @@ public with sharing class RateLimitService {
      * @return True if within limit
      */
     private static Boolean checkLimit(String key, RateLimitConfig config, Integer count) {
-        // Get current counter from Platform Cache
-        Cache.OrgPartition orgPart = Cache.Org.getPartition('routelogic.RateLimits');
-        if (orgPart == null) {
-            // Cache not configured, use in-memory tracking
-            return checkLimitInMemory(key, config, count);
+        // Get current counter from Platform Cache using CacheUtils
+        Object cachedValue = CacheUtils.get(CacheUtils.PARTITION_RATE_LIMITS, key);
+        
+        if (cachedValue == null && !CacheUtils.contains(CacheUtils.PARTITION_RATE_LIMITS, key)) {
+            // Cache partition not available, use in-memory tracking
+            Cache.OrgPartition testPartition = CacheUtils.getPartition(CacheUtils.PARTITION_RATE_LIMITS);
+            if (testPartition == null) {
+                return checkLimitInMemory(key, config, count);
+            }
         }
         
         // Get current count
-        Integer currentCount = (Integer) orgPart.get(key);
-        if (currentCount == null) {
-            currentCount = 0;
-        }
+        Integer currentCount = cachedValue != null ? (Integer) cachedValue : 0;
         
         // Check if adding count would exceed limit
         if (currentCount + count > config.limit) {
             return false;
         }
         
-        // Increment counter
-        orgPart.put(key, currentCount + count, config.windowSeconds);
+        // Increment counter using CacheUtils
+        CacheUtils.put(CacheUtils.PARTITION_RATE_LIMITS, key, currentCount + count, config.windowSeconds);
         
         return true;
     }
@@ -179,16 +180,15 @@ public with sharing class RateLimitService {
      */
     public static void resetRateLimit(String operation, String identifier) {
         try {
-            Cache.OrgPartition orgPart = Cache.Org.getPartition('routelogic.RateLimits');
-            if (orgPart != null) {
-                String userKey = 'USER_' + identifier + '_' + operation;
-                orgPart.remove(userKey);
-                
-                String ipAddress = getCurrentIPAddress();
-                if (String.isNotBlank(ipAddress)) {
-                    String ipKey = 'IP_' + ipAddress + '_' + operation;
-                    orgPart.remove(ipKey);
-                }
+            // Remove user key using CacheUtils
+            String userKey = 'USER_' + identifier + '_' + operation;
+            CacheUtils.remove(CacheUtils.PARTITION_RATE_LIMITS, userKey);
+            
+            // Remove IP key if available
+            String ipAddress = getCurrentIPAddress();
+            if (String.isNotBlank(ipAddress)) {
+                String ipKey = 'IP_' + ipAddress + '_' + operation;
+                CacheUtils.remove(CacheUtils.PARTITION_RATE_LIMITS, ipKey);
             }
             
             // Also clear in-memory
@@ -209,10 +209,10 @@ public with sharing class RateLimitService {
         try {
             String userKey = 'USER_' + identifier + '_' + operation;
             
-            Cache.OrgPartition orgPart = Cache.Org.getPartition('routelogic.RateLimits');
-            if (orgPart != null) {
-                Integer count = (Integer) orgPart.get(userKey);
-                return count != null ? count : 0;
+            // Get count using CacheUtils
+            Object cachedValue = CacheUtils.get(CacheUtils.PARTITION_RATE_LIMITS, userKey);
+            if (cachedValue != null) {
+                return (Integer) cachedValue;
             }
             
             // Check in-memory
@@ -255,11 +255,13 @@ public with sharing class RateLimitService {
                 config.limit = (Integer)(config.limit * 0.75); // 25% reduction
             }
             
-            // Store adjusted config in cache
-            Cache.OrgPartition orgPart = Cache.Org.getPartition('routelogic.RateLimits');
-            if (orgPart != null) {
-                orgPart.put('CONFIG_' + operation, config, 300); // 5 minute TTL
-            }
+            // Store adjusted config in cache using CacheUtils
+            CacheUtils.put(
+                CacheUtils.PARTITION_RATE_LIMITS,
+                'CONFIG_' + operation,
+                config,
+                300 // 5 minute TTL
+            );
         }
     }
     

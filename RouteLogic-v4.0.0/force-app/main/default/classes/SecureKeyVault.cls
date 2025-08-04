@@ -12,10 +12,9 @@
  */
 public with sharing class SecureKeyVault {
     
-    // Cache partition name - must be created in Setup
-    private static final String CACHE_PARTITION = 'RouteLogic';
+    // Cache configuration using CacheUtils
     private static final String KEY_CACHE_PREFIX = 'SecureKey.';
-    private static final Integer CACHE_TTL = 3600; // 1 hour
+    private static final Integer CACHE_TTL = CacheUtils.TTL_MEDIUM; // 1 hour
     
     // Custom metadata type for key storage
     private static final String KEY_METADATA_TYPE = 'AI_Secure_Key__mdt';
@@ -39,11 +38,13 @@ public with sharing class SecureKeyVault {
             // Derive the storage key using PBKDF2-like approach
             Blob derivedKey = deriveStorageKey(keyValue, salt);
             
-            // Store in Platform Cache (encrypted)
-            Cache.OrgPartition orgPart = Cache.Org.getPartition(CACHE_PARTITION);
-            if (orgPart != null) {
-                orgPart.put(KEY_CACHE_PREFIX + keyName, new CachedKey(derivedKey, salt), CACHE_TTL);
-            }
+            // Store in Platform Cache (encrypted) using CacheUtils
+            CacheUtils.put(
+                CacheUtils.PARTITION_KEY_METADATA, 
+                KEY_CACHE_PREFIX + keyName, 
+                new CachedKey(derivedKey, salt), 
+                CACHE_TTL
+            );
             
             // Store metadata for key recovery (salt only, not the actual key)
             // In production, this would use Metadata API or Setup UI
@@ -69,13 +70,15 @@ public with sharing class SecureKeyVault {
         }
         
         try {
-            // Check Platform Cache first
-            Cache.OrgPartition orgPart = Cache.Org.getPartition(CACHE_PARTITION);
-            if (orgPart != null && orgPart.contains(KEY_CACHE_PREFIX + keyName)) {
-                CachedKey cached = (CachedKey) orgPart.get(KEY_CACHE_PREFIX + keyName);
-                if (cached != null) {
-                    return reconstructKey(cached, masterSecret);
-                }
+            // Check Platform Cache first using CacheUtils
+            Object cachedValue = CacheUtils.get(
+                CacheUtils.PARTITION_KEY_METADATA, 
+                KEY_CACHE_PREFIX + keyName
+            );
+            
+            if (cachedValue != null) {
+                CachedKey cached = (CachedKey) cachedValue;
+                return reconstructKey(cached, masterSecret);
             }
             
             // If not in cache, reconstruct from metadata
@@ -86,9 +89,14 @@ public with sharing class SecureKeyVault {
                 Blob reconstructedKey = reconstructKeyFromMetadata(keyMetadata, masterSecret);
                 
                 // Cache it for future use
-                if (orgPart != null && reconstructedKey != null) {
+                if (reconstructedKey != null) {
                     Blob derivedKey = deriveStorageKey(reconstructedKey, salt);
-                    orgPart.put(KEY_CACHE_PREFIX + keyName, new CachedKey(derivedKey, salt), CACHE_TTL);
+                    CacheUtils.put(
+                        CacheUtils.PARTITION_KEY_METADATA,
+                        KEY_CACHE_PREFIX + keyName,
+                        new CachedKey(derivedKey, salt),
+                        CACHE_TTL
+                    );
                 }
                 
                 return reconstructedKey;
@@ -141,11 +149,11 @@ public with sharing class SecureKeyVault {
      */
     public static Boolean clearKey(String keyName) {
         try {
-            // Clear from cache
-            Cache.OrgPartition orgPart = Cache.Org.getPartition(CACHE_PARTITION);
-            if (orgPart != null) {
-                orgPart.remove(KEY_CACHE_PREFIX + keyName);
-            }
+            // Clear from cache using CacheUtils
+            CacheUtils.remove(
+                CacheUtils.PARTITION_KEY_METADATA,
+                KEY_CACHE_PREFIX + keyName
+            );
             
             // Note: Metadata deletion would require Metadata API
             // For now, we can only clear from cache
