@@ -225,7 +225,7 @@ public with sharing class RouteLogicSecurityUtils {
             Blob hmac = Crypto.generateMac('HmacSHA256', Blob.valueOf(payload), Blob.valueOf(secret));
             String expectedSignature = EncodingUtil.convertToHex(hmac);
             
-            return Crypto.equals(signature, expectedSignature);
+            return signature.equals(expectedSignature);
         } catch (Exception e) {
             System.debug(LoggingLevel.ERROR, 'HMAC validation failed: ' + e.getMessage());
             return false;
@@ -319,7 +319,7 @@ public with sharing class RouteLogicSecurityUtils {
         }
         
         try {
-            return Security.stripInaccessible(accessType, records).getRecords();
+            return Security.stripInaccessible(System.AccessType.valueOf(accessType.name()), records).getRecords();
         } catch (Exception e) {
             throw new SecurityException('Failed to strip inaccessible fields: ' + e.getMessage());
         }
