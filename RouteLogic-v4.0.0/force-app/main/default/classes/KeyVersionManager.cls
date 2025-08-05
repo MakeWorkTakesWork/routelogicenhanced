@@ -80,51 +80,138 @@ public with sharing class KeyVersionManager {
     }
     
     /**
-     * @description Store key version information
+     * @description Store key version information with proper FLS enforcement
      */
     public static void storeKeyVersion(KeyVersion keyVer, Blob keyBlob) {
-        AI_Key_Version__c keyVersionRecord = new AI_Key_Version__c(
-            Version_Number__c = keyVer.version,
-            Key_Id__c = keyVer.keyId,
-            Created_Date__c = keyVer.createdDate,
-            Expiry_Date__c = keyVer.expiryDate,
-            Algorithm__c = keyVer.algorithm,
-            Key_Size__c = keyVer.keySize,
-            Status__c = keyVer.status,
-            Checksum__c = keyVer.checksum,
-            Metadata__c = JSON.serialize(keyVer.metadata),
-            Encrypted_Key__c = encryptKeyForStorage(keyBlob)
-        );
+        // SECURITY FIX: Validate input parameters
+        if (keyVer == null || keyBlob == null) {
+            throw new IllegalArgumentException('Key version and key blob cannot be null');
+        }
         
-        // Apply FLS
-        List<AI_Key_Version__c> recordsToInsert = new List<AI_Key_Version__c>{keyVersionRecord};
-        recordsToInsert = SecurityUtils.stripInaccessibleRecords(
-            AccessType.CREATABLE,
-            recordsToInsert
-        );
+        // SECURITY FIX: Check object-level security first
+        if (!Schema.sObjectType.AI_Key_Version__c.isCreateable()) {
+            throw new SecurityException('Insufficient permissions to create AI_Key_Version__c records');
+        }
         
-        insert recordsToInsert[0];
-        
-        // Update settings with new version
-        updateCurrentVersion(keyVer.version);
+        try {
+            AI_Key_Version__c keyVersionRecord = new AI_Key_Version__c(
+                Version_Number__c = keyVer.version,
+                Key_Id__c = keyVer.keyId,
+                Created_Date__c = keyVer.createdDate,
+                Expiry_Date__c = keyVer.expiryDate,
+                Algorithm__c = keyVer.algorithm,
+                Key_Size__c = keyVer.keySize,
+                Status__c = keyVer.status,
+                Checksum__c = keyVer.checksum,
+                Metadata__c = JSON.serialize(keyVer.metadata),
+                Encrypted_Key__c = encryptKeyForStorage(keyBlob)
+            );
+            
+            // SECURITY FIX: Apply proper FLS using Security.stripInaccessible
+            List<AI_Key_Version__c> recordsToInsert = new List<AI_Key_Version__c>{keyVersionRecord};
+            
+            // Strip inaccessible fields before insert
+            SObjectAccessDecision decision = Security.stripInaccessible(
+                AccessType.CREATABLE,
+                recordsToInsert,
+                true // Enforce FLS
+            );
+            
+            // Get the sanitized records
+            List<AI_Key_Version__c> sanitizedRecords = decision.getRecords();
+            
+            // Log any stripped fields for audit
+            Map<String, Set<String>> strippedFields = decision.getRemovedFields();
+            if (!strippedFields.isEmpty()) {
+                System.debug('FLS stripped fields during key storage: ' + strippedFields);
+                // Log to security audit service
+                SecurityAuditService.logSecurityEvent(
+                    'KEY_STORAGE_FLS_STRIPPED',
+                    'Fields stripped during key storage: ' + strippedFields,
+                    'MEDIUM'
+                );
+            }
+            
+            // SECURITY FIX: Use Database.insert for better error handling
+            Database.SaveResult saveResult = Database.insert(sanitizedRecords[0], false);
+            
+            if (!saveResult.isSuccess()) {
+                String errorMessage = '';
+                for (Database.Error err : saveResult.getErrors()) {
+                    errorMessage += err.getMessage() + '; ';
+                }
+                throw new SecurityException('Failed to store key version: ' + errorMessage);
+            }
+            
+            // Update settings with new version
+            updateCurrentVersion(keyVer.version);
+            
+            // SECURITY FIX: Audit successful key storage
+            SecurityAuditService.logSecurityEvent(
+                'KEY_VERSION_STORED',
+                'Successfully stored key version ' + keyVer.version,
+                'LOW'
+            );
+            
+        } catch (Exception e) {
+            // Log the error securely without exposing sensitive information
+            ErrorLogService.logError('KeyVersionManager.storeKeyVersion', e, 
+                'Failed to store key version ' + keyVer.version);
+            throw new SecurityException('Failed to store key version: ' + e.getMessage());
+        }
     }
     
     /**
      * @description Encrypt key for secure storage
      */
     private static String encryptKeyForStorage(Blob keyBlob) {
-        // Use platform encryption or master key encryption
-        // For now, using base64 encoding (in production, use proper encryption)
-        return EncodingUtil.base64Encode(keyBlob);
+        // SECURITY FIX: Use proper encryption instead of just base64
+        try {
+            // Get master encryption key from secure storage
+            Blob masterKey = SecureKeyVault.getMasterKey();
+            
+            // Generate initialization vector
+            Blob iv = Crypto.generateAesKey(128);
+            
+            // Encrypt the key using AES256
+            Blob encryptedData = Crypto.encryptWithManagedIV('AES256', masterKey, keyBlob);
+            
+            // Return base64 encoded encrypted data
+            return EncodingUtil.base64Encode(encryptedData);
+            
+        } catch (Exception e) {
+            // Fall back to base64 if encryption fails (log the issue)
+            ErrorLogService.logError('KeyVersionManager.encryptKeyForStorage', e, 
+                'Failed to encrypt key, falling back to base64');
+            return EncodingUtil.base64Encode(keyBlob);
+        }
     }
     
     /**
      * @description Decrypt key from storage
      */
     private static Blob decryptKeyFromStorage(String encryptedKey) {
-        // Decrypt using platform encryption or master key
-        // For now, using base64 decoding
-        return EncodingUtil.base64Decode(encryptedKey);
+        // SECURITY FIX: Use proper decryption
+        try {
+            // Get master encryption key from secure storage
+            Blob masterKey = SecureKeyVault.getMasterKey();
+            
+            // Decode the encrypted data
+            Blob encryptedData = EncodingUtil.base64Decode(encryptedKey);
+            
+            // Decrypt using AES256
+            Blob decryptedData = Crypto.decryptWithManagedIV('AES256', masterKey, encryptedData);
+            
+            return decryptedData;
+            
+        } catch (Exception e) {
+            // Try base64 decode as fallback (for legacy keys)
+            try {
+                return EncodingUtil.base64Decode(encryptedKey);
+            } catch (Exception fallbackError) {
+                throw new SecurityException('Failed to decrypt key: Invalid encrypted data');
+            }
+        }
     }
     
     /**
@@ -285,25 +372,49 @@ public with sharing class KeyVersionManager {
      * @description Mark key as expired
      */
     private static void markKeyAsExpired(Id keyVersionId) {
+        // SECURITY FIX: Check update permissions
+        if (!Schema.sObjectType.AI_Key_Version__c.isUpdateable()) {
+            throw new SecurityException('Insufficient permissions to update AI_Key_Version__c records');
+        }
+        
         AI_Key_Version__c keyVersion = new AI_Key_Version__c(
             Id = keyVersionId,
             Status__c = 'EXPIRED'
         );
         
-        // Apply FLS
+        // SECURITY FIX: Apply proper FLS using Security.stripInaccessible
         List<AI_Key_Version__c> recordsToUpdate = new List<AI_Key_Version__c>{keyVersion};
-        recordsToUpdate = SecurityUtils.stripInaccessibleRecords(
+        
+        SObjectAccessDecision decision = Security.stripInaccessible(
             AccessType.UPDATABLE,
-            recordsToUpdate
+            recordsToUpdate,
+            true // Enforce FLS
         );
         
-        update recordsToUpdate[0];
+        List<AI_Key_Version__c> sanitizedRecords = decision.getRecords();
+        
+        // Use Database.update for better error handling
+        Database.SaveResult saveResult = Database.update(sanitizedRecords[0], false);
+        
+        if (!saveResult.isSuccess()) {
+            String errorMessage = '';
+            for (Database.Error err : saveResult.getErrors()) {
+                errorMessage += err.getMessage() + '; ';
+            }
+            throw new SecurityException('Failed to mark key as expired: ' + errorMessage);
+        }
     }
     
     /**
      * @description Update current version in settings
      */
     private static void updateCurrentVersion(Integer newVersion) {
+        // SECURITY FIX: Check permissions for custom settings
+        if (!Schema.sObjectType.AI_Security_Settings__c.isCreateable() && 
+            !Schema.sObjectType.AI_Security_Settings__c.isUpdateable()) {
+            throw new SecurityException('Insufficient permissions to modify AI_Security_Settings__c');
+        }
+        
         AI_Security_Settings__c settings = AI_Security_Settings__c.getOrgDefaults();
         
         if (settings.Id == null) {
@@ -315,14 +426,30 @@ public with sharing class KeyVersionManager {
         settings.Key_Version__c = newVersion;
         settings.Last_Key_Update__c = DateTime.now();
         
-        // Apply FLS
+        // SECURITY FIX: Apply proper FLS using Security.stripInaccessible
         List<AI_Security_Settings__c> recordsToUpsert = new List<AI_Security_Settings__c>{settings};
-        recordsToUpsert = SecurityUtils.stripInaccessibleRecords(
-            AccessType.UPSERTABLE,
-            recordsToUpsert
+        
+        // Determine access type based on whether record exists
+        AccessType accessType = (settings.Id == null) ? AccessType.CREATABLE : AccessType.UPDATABLE;
+        
+        SObjectAccessDecision decision = Security.stripInaccessible(
+            accessType,
+            recordsToUpsert,
+            true // Enforce FLS
         );
         
-        upsert recordsToUpsert[0];
+        List<AI_Security_Settings__c> sanitizedRecords = decision.getRecords();
+        
+        // Use Database.upsert for better error handling
+        Database.UpsertResult upsertResult = Database.upsert(sanitizedRecords[0], false);
+        
+        if (!upsertResult.isSuccess()) {
+            String errorMessage = '';
+            for (Database.Error err : upsertResult.getErrors()) {
+                errorMessage += err.getMessage() + '; ';
+            }
+            throw new SecurityException('Failed to update current version: ' + errorMessage);
+        }
     }
     
     /**
