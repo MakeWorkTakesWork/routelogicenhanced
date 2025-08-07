@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: [ main, setup-ci ]
+    branches: [ main, ci-apex-tests ]
   workflow_dispatch:
 jobs:
   validate-secrets:
@@ -21,11 +21,63 @@ jobs:
           [ -n "$SFDX_SECURITY_TOKEN" ] || { echo "Missing SFDX_SECURITY_TOKEN"; exit 1; }
           [ -n "$SFDX_LOGIN_URL" ] || { echo "Missing SFDX_LOGIN_URL"; exit 1; }
           echo "All required secrets present for sandbox auth."
-  build:
+  apex-tests:
     needs: validate-secrets
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Repository contents snapshot
+      - name: Install Salesforce CLI
+        uses: salesforcecli/action@v1
+      - name: Authenticate to Sandbox (username + password + token)
+        env:
+          SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
+          SFDX_PASSWORD: ${{ secrets.SFDX_PASSWORD }}
+          SFDX_SECURITY_TOKEN: ${{ secrets.SFDX_SECURITY_TOKEN }}
+          SFDX_LOGIN_URL: ${{ secrets.SFDX_LOGIN_URL }}
         run: |
-          echo "Listing repository root:" && ls -la
+          set -e
+          sf org login soap \
+            --username "$SFDX_USERNAME" \
+            --password "$SFDX_PASSWORD" \
+            --security-token "$SFDX_SECURITY_TOKEN" \
+            --instance-url "$SFDX_LOGIN_URL" \
+            --alias ci \
+            --noprompt
+          sf org display --target-org ci
+      - name: Run Apex tests (RunLocalTests)
+        run: |
+          set -e
+          mkdir -p test-results
+          sf apex run test --target-org ci -l RunLocalTests -w 60 -r junit -d test-results || { echo "Apex tests failed"; exit 1; }
+      - name: Upload Apex test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: apex-junit
+          path: test-results
+  security-scan:
+    needs: apex-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Salesforce CLI
+        uses: salesforcecli/action@v1
+      - name: Install Code Analyzer plugin
+        run: |
+          set -e
+          sf plugins install @salesforce/sfdx-scanner
+          sf plugins
+      - name: Run security scan (PMD rulesets)
+        run: |
+          set -e
+          mkdir -p scanner-results
+          sf scanner run \
+            --target "RouteLogic-v4.0.0/force-app/main/default" \
+            --category "Security" \
+            --severity-threshold 3 \
+            --format sarif \
+            --outfile scanner-results/security.sarif || true
+      - name: Upload scanner results (SARIF)
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-sarif
+          path: scanner-results/security.sarif
