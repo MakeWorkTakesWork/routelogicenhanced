@@ -1,0 +1,31 @@
+name: CI
+on:
+  push:
+    branches: [ main, setup-ci ]
+  workflow_dispatch:
+jobs:
+  validate-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate required Salesforce secrets
+        env:
+          SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
+          SFDX_PASSWORD: ${{ secrets.SFDX_PASSWORD }}
+          SFDX_SECURITY_TOKEN: ${{ secrets.SFDX_SECURITY_TOKEN }}
+          SFDX_LOGIN_URL: ${{ secrets.SFDX_LOGIN_URL }}
+        run: |
+          set -e
+          [ -n "$SFDX_USERNAME" ] || { echo "Missing SFDX_USERNAME"; exit 1; }
+          [ -n "$SFDX_PASSWORD" ] || { echo "Missing SFDX_PASSWORD"; exit 1; }
+          [ -n "$SFDX_SECURITY_TOKEN" ] || { echo "Missing SFDX_SECURITY_TOKEN"; exit 1; }
+          [ -n "$SFDX_LOGIN_URL" ] || { echo "Missing SFDX_LOGIN_URL"; exit 1; }
+          echo "All required secrets present for sandbox auth."
+  build:
+    needs: validate-secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Repository contents snapshot
+        run: |
+          echo "Listing repository root:" && ls -la
