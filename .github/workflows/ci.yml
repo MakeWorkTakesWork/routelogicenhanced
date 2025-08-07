@@ -32,20 +32,75 @@ jobs:
           npm install -g @salesforce/cli
           sf --version
       - name: Authenticate to Sandbox (username + password + token)
-        env:
-          SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
-          SFDX_PASSWORD: ${{ secrets.SFDX_PASSWORD }}
-          SFDX_SECURITY_TOKEN: ${{ secrets.SFDX_SECURITY_TOKEN }}
-          SFDX_LOGIN_URL: ${{ secrets.SFDX_LOGIN_URL }}
+      - name: Run Apex tests (RunLocalTests)
         run: |
           set -e
-          sf org login soap \
-            --username "$SFDX_USERNAME" \
-            --password "$SFDX_PASSWORD" \
-            --security-token "$SFDX_SECURITY_TOKEN" \
-            --instance-url "$SFDX_LOGIN_URL" \
-            --alias ci \
-            --noprompt
+          mkdir -p test-results
+          sf apex run test --target-org ci -l RunLocalTests -w 60 -r junit -d test-results || { echo "Apex tests failed"; exit 1; }
+      - name: Upload Apex test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: apex-junit
+          path: test-results
+  security-scan:
+    needs: apex-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Salesforce CLI
+        run: |
+          set -e
+          npm install -g @salesforce/cli
+          sf --version
+      - name: Install Code Analyzer plugin
+        run: |
+          set -e
+          sf plugins install @salesforce/sfdx-scanner
+          sf plugins
+      - name: Run security scan (PMD rulesets)
+        run: |
+          set -e
+          mkdir -p scanner-results
+          sf scanner run \
+            --target "RouteLogic-v4.0.0/force-app/main/default" \
+            --category "Security" \
+            --severity-threshold 3 \
+            --format sarif \
+            --outfile scanner-results/security.sarif || true
+      - name: Upload scanner results (SARIF)
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-sarif
+          path: scanner-results/security.sarif
+      - name: Authenticate to Org (JWT or SFDX URL)
+        env:
+          SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
+          SFDX_LOGIN_URL: ${{ secrets.SFDX_LOGIN_URL }}
+          SFDX_CLIENT_ID: ${{ secrets.SFDX_CLIENT_ID }}
+          SFDX_JWT_KEY: ${{ secrets.SFDX_JWT_KEY }}
+          SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
+        run: |
+          set -e
+          if [ -n "${SFDX_CLIENT_ID}" ] && [ -n "${SFDX_JWT_KEY}" ]; then
+            echo "Using JWT auth"
+            echo "$SFDX_JWT_KEY" > server.key
+            sf org login jwt \
+              --username "$SFDX_USERNAME" \
+              --client-id "$SFDX_CLIENT_ID" \
+              --jwt-key-file server.key \
+              --instance-url "$SFDX_LOGIN_URL" \
+              --alias ci \
+              --noprompt
+          elif [ -n "${SFDX_AUTH_URL}" ]; then
+            echo "Using SFDX auth URL"
+            sf org login sfdx-url \
+              --sfdx-url "$SFDX_AUTH_URL" \
+              --alias ci \
+              --noprompt
+          else
+            echo "No supported auth method configured. Set SFDX_CLIENT_ID + SFDX_JWT_KEY (JWT) or SFDX_AUTH_URL." >&2
+            exit 1
+          fi
           sf org display --target-org ci
       - name: Run Apex tests (RunLocalTests)
         run: |
