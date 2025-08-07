@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Salesforce CLI
-        uses: salesforcecli/action@v1
+        uses: salesforcecli/gh-actions/setup-sf@v1
       - name: Authenticate to Sandbox (username + password + token)
         env:
           SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
@@ -60,7 +60,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Salesforce CLI
-        uses: salesforcecli/action@v1
+        uses: salesforcecli/gh-actions/setup-sf@v1
       - name: Install Code Analyzer plugin
         run: |
           set -e
