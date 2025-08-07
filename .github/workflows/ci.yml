@@ -47,6 +47,7 @@ jobs:
       SFDX_PASSWORD: ${{ secrets.SFDX_PASSWORD }}
       SFDX_SECURITY_TOKEN: ${{ secrets.SFDX_SECURITY_TOKEN }}
       SFDX_LOGIN_URL: ${{ secrets.SFDX_LOGIN_URL }}
+      SFDX_INSTANCE_URL: ${{ secrets.SFDX_INSTANCE_URL }}
       SFDX_CLIENT_ID: ${{ secrets.SFDX_CLIENT_ID }}
       SFDX_JWT_KEY: ${{ secrets.SFDX_JWT_KEY }}
       SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
@@ -61,7 +62,8 @@ jobs:
 
       - name: Install Salesforce CLI
         run: |
-          npm install --global sfdx-cli
+          npm install --global @salesforce/cli sfdx-cli
+          sf --version || true
           sfdx --version
           sfdx plugins --core
 
@@ -74,17 +76,36 @@ jobs:
         run: |
           set -euo pipefail
           : "${SFDX_LOGIN_URL:=https://login.salesforce.com}"
+          EFFECTIVE_URL="${SFDX_INSTANCE_URL:-$SFDX_LOGIN_URL}"
           if [ -n "${SFDX_CLIENT_ID:-}" ] && [ -n "${SFDX_JWT_KEY:-}" ] && [ -n "${SFDX_USERNAME:-}" ]; then
             echo "Using JWT auth"
-            printf "%s" "$SFDX_JWT_KEY" > server.key
-            sfdx force:auth:jwt:grant -i "$SFDX_CLIENT_ID" -f server.key -u "$SFDX_USERNAME" -r "$SFDX_LOGIN_URL" -a "$ORG_ALIAS"
+            printf "%s" "$SFDX_JWT_KEY" > "$HOME/server.key"
+            if ! sf org login jwt --client-id "$SFDX_CLIENT_ID" --username "$SFDX_USERNAME" --jwt-key-file "$HOME/server.key" --instance-url "$EFFECTIVE_URL" --alias "$ORG_ALIAS" --set-default; then
+              echo "sf jwt login failed; trying sfdx..."
+              if ! sfdx force:auth:jwt:grant -i "$SFDX_CLIENT_ID" -f "$HOME/server.key" -u "$SFDX_USERNAME" -r "$SFDX_LOGIN_URL" -a "$ORG_ALIAS"; then
+                echo "JWT auth failed; attempting fallback..."
+                if [ -n "${SFDX_AUTH_URL:-}" ]; then
+                  echo "Fallback: Using SFDX auth URL"
+                  printf "%s" "$SFDX_AUTH_URL" > sfdx_auth.txt
+                  sfdx force:auth:sfdxurl:store -f sfdx_auth.txt -a "$ORG_ALIAS"
+                elif [ -n "${SFDX_USERNAME:-}" ] && [ -n "${SFDX_PASSWORD:-}" ]; then
+                  echo "Fallback: Using password login"
+                  PASS_COMBINED="${SFDX_PASSWORD}${SFDX_SECURITY_TOKEN:-}"
+                  sfdx force:auth:password:login -r "$SFDX_LOGIN_URL" -u "$SFDX_USERNAME" -p "$PASS_COMBINED" -a "$ORG_ALIAS"
+                else
+                  echo "No fallback auth available." >&2
+                  exit 1
+                fi
+              fi
+            fi
           elif [ -n "${SFDX_AUTH_URL:-}" ]; then
             echo "Using SFDX auth URL"
             printf "%s" "$SFDX_AUTH_URL" > sfdx_auth.txt
             sfdx force:auth:sfdxurl:store -f sfdx_auth.txt -a "$ORG_ALIAS"
-          elif [ -n "${SFDX_USERNAME:-}" ] && [ -n "${SFDX_PASSWORD:-}" ] && [ -n "${SFDX_SECURITY_TOKEN:-}" ]; then
-            echo "Using password+token auth"
-            sfdx force:auth:password:login -r "$SFDX_LOGIN_URL" -u "$SFDX_USERNAME" -p "${SFDX_PASSWORD}${SFDX_SECURITY_TOKEN}" -a "$ORG_ALIAS"
+          elif [ -n "${SFDX_USERNAME:-}" ] && [ -n "${SFDX_PASSWORD:-}" ]; then
+            echo "Using password login"
+            PASS_COMBINED="${SFDX_PASSWORD}${SFDX_SECURITY_TOKEN:-}"
+            sfdx force:auth:password:login -r "$SFDX_LOGIN_URL" -u "$SFDX_USERNAME" -p "$PASS_COMBINED" -a "$ORG_ALIAS"
           else
             echo "No supported auth method secrets found." >&2
             exit 1
