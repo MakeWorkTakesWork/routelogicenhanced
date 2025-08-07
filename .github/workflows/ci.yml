@@ -84,7 +84,7 @@ jobs:
             sfdx force:auth:sfdxurl:store -f sfdx_auth.txt -a "$ORG_ALIAS"
           elif [ -n "${SFDX_USERNAME:-}" ] && [ -n "${SFDX_PASSWORD:-}" ] && [ -n "${SFDX_SECURITY_TOKEN:-}" ]; then
             echo "Using password+token auth"
-            sfdx force:auth:login -r "$SFDX_LOGIN_URL" -u "$SFDX_USERNAME" -p "${SFDX_PASSWORD}${SFDX_SECURITY_TOKEN}" -a "$ORG_ALIAS"
+            sfdx force:auth:password:login -r "$SFDX_LOGIN_URL" -u "$SFDX_USERNAME" -p "${SFDX_PASSWORD}${SFDX_SECURITY_TOKEN}" -a "$ORG_ALIAS"
           else
             echo "No supported auth method secrets found." >&2
             exit 1
