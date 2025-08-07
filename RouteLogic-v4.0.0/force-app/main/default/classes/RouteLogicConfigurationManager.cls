@@ -4,6 +4,9 @@
  * @date 2025-01-21
  * @version 4.0.0
  * 
+ * SECURITY FIXES APPLIED (2025-01-31):
+ * - Fix #1: Replaced hardcoded encryption key in getMasterKey() with secure retrieval from Protected Custom Metadata
+ * 
  * This class provides secure configuration management including:
  * - Custom metadata type configuration storage
  * - Encrypted sensitive data handling
@@ -547,6 +550,39 @@ public with sharing class RouteLogicConfigurationManager {
         result.message = 'Integration configuration test successful';
         
         return result;
+    }
+    
+    /**
+     * @description Get master encryption key from Protected Custom Metadata
+     * @return Master encryption key
+     * @throws AuraHandledException if key is not configured
+     */
+    public static String getMasterKey() {
+        try {
+            // SECURITY FIX #1: Replaced hardcoded key 'RouteLogic_Master_Key_v4' 
+            // with secure retrieval from Protected Custom Metadata Type
+            RouteLogic_Secrets__mdt secret = [
+                SELECT Key_Value__c 
+                FROM RouteLogic_Secrets__mdt 
+                WHERE DeveloperName = 'Master_Key' 
+                WITH SECURITY_ENFORCED
+                LIMIT 1
+            ];
+            
+            if (secret != null && String.isNotBlank(secret.Key_Value__c)) {
+                return secret.Key_Value__c;
+            }
+            
+            throw new AuraHandledException('Master encryption key is not configured.');
+            
+        } catch (QueryException e) {
+            // Handle case where Custom Metadata record doesn't exist
+            throw new AuraHandledException('Master encryption key is not configured. Please ensure RouteLogic_Secrets__mdt.Master_Key record exists.');
+        } catch (Exception e) {
+            // Log error securely without exposing sensitive information
+            System.debug(LoggingLevel.ERROR, 'Failed to retrieve master key: ' + e.getTypeName());
+            throw new AuraHandledException('Failed to retrieve master encryption key. Please contact your administrator.');
+        }
     }
     
     /**

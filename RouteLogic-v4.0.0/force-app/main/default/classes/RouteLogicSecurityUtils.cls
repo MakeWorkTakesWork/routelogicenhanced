@@ -4,6 +4,10 @@
  * @date 2025-01-21
  * @version 4.0.0
  * 
+ * SECURITY FIXES APPLIED (2025-01-31):
+ * - Fix #2: Removed flawed regex-based sanitizeInput method, replaced with preventXSS and sanitizeForSOQL
+ * - Fix #3: Added enforceUpdateSecurity method using Security.stripInaccessible
+ * 
  * This class provides comprehensive security utilities including:
  * - Field-Level Security validation
  * - Input sanitization and XSS prevention
@@ -117,37 +121,51 @@ public with sharing class RouteLogicSecurityUtils {
     }
     
     /**
-     * @description Sanitize input to prevent XSS and injection attacks
-     * @param input The input string to sanitize
-     * @return Sanitized input string
+     * @description Prevent XSS attacks by properly escaping HTML characters
+     * @param input The input string to escape
+     * @return HTML-escaped string safe for display
      */
-    public static String sanitizeInput(String input) {
+    public static String preventXSS(String input) {
         if (String.isBlank(input)) {
             return input;
         }
         
-        // Check input length
-        if (input.length() > MAX_INPUT_LENGTH) {
-            throw new SecurityException('Input exceeds maximum allowed length: ' + MAX_INPUT_LENGTH);
+        // SECURITY FIX #2: Use String.escapeHtml4() for proper XSS prevention
+        // This is the Salesforce-recommended approach for HTML escaping
+        return input.escapeHtml4();
+    }
+    
+    /**
+     * @description Sanitize input for use in dynamic SOQL queries
+     * @param input The input string to sanitize for SOQL
+     * @return String with single quotes escaped for SOQL safety
+     * 
+     * WARNING: Using bind variables is always preferred over this method.
+     * Use this only when absolutely necessary, such as when building dynamic
+     * field lists or object names that cannot be parameterized.
+     */
+    public static String sanitizeForSOQL(String input) {
+        if (String.isBlank(input)) {
+            return input;
         }
         
-        String sanitized = input;
-        
-        // Remove potential XSS patterns
-        sanitized = sanitized.replaceAll(XSS_PATTERN, '');
-        
-        // Remove potential SQL injection patterns
-        sanitized = sanitized.replaceAll(SQL_INJECTION_PATTERN, '');
-        
-        // HTML encode special characters
-        sanitized = sanitized.replace('&', '&amp;')
-                            .replace('<', '&lt;')
-                            .replace('>', '&gt;')
-                            .replace('"', '&quot;')
-                            .replace('\'', '&#x27;')
-                            .replace('/', '&#x2F;');
-        
-        return sanitized;
+        // SECURITY FIX #2: Use String.escapeSingleQuotes() for SOQL injection prevention
+        // This escapes single quotes to prevent SOQL injection
+        return String.escapeSingleQuotes(input);
+    }
+    
+    /**
+     * @description DEPRECATED - Use preventXSS() or sanitizeForSOQL() instead
+     * @param input The input string
+     * @return The input string unmodified
+     * @deprecated This method has been replaced by preventXSS() and sanitizeForSOQL()
+     */
+    @Deprecated
+    public static String sanitizeInput(String input) {
+        // SECURITY FIX #2: This method is deprecated and should not be used
+        // Redirect to preventXSS for backward compatibility
+        System.debug(LoggingLevel.WARN, 'sanitizeInput() is deprecated. Use preventXSS() or sanitizeForSOQL() instead.');
+        return preventXSS(input);
     }
     
     /**
@@ -322,6 +340,40 @@ public with sharing class RouteLogicSecurityUtils {
             return Security.stripInaccessible(accessType, records).getRecords();
         } catch (Exception e) {
             throw new SecurityException('Failed to strip inaccessible fields: ' + e.getMessage());
+        }
+    }
+    
+    /**
+     * @description Enforce field-level security for update operations
+     * @param records List of SObject records to sanitize before DML update
+     * @return List of records with fields removed that the current user cannot update
+     * 
+     * SECURITY FIX #3: This method ensures consistent FLS enforcement across all update operations.
+     * It removes any fields from the records that the current user does not have permission to update,
+     * preventing unauthorized field modifications and ensuring compliance with the security model.
+     */
+    public static List<SObject> enforceUpdateSecurity(List<SObject> records) {
+        if (records == null || records.isEmpty()) {
+            return records;
+        }
+        
+        try {
+            // Use Security.stripInaccessible with UPDATABLE access type
+            // This removes all fields that the current user cannot update
+            SObjectAccessDecision decision = Security.stripInaccessible(
+                AccessType.UPDATABLE, 
+                records
+            );
+            
+            // Return the sanitized records
+            return decision.getRecords();
+            
+        } catch (NoAccessException e) {
+            // Handle the case where the user has no access to the object at all
+            throw new SecurityException('User does not have update access to the object: ' + e.getMessage());
+        } catch (Exception e) {
+            // Handle any other exceptions that might occur
+            throw new SecurityException('Failed to enforce update security: ' + e.getMessage());
         }
     }
     
