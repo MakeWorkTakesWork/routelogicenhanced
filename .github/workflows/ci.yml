@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  validate-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect available Salesforce auth method
+        id: detect
+        env:
+          SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
+          SFDX_PASSWORD: ${{ secrets.SFDX_PASSWORD }}
+          SFDX_SECURITY_TOKEN: ${{ secrets.SFDX_SECURITY_TOKEN }}
+          SFDX_LOGIN_URL: ${{ secrets.SFDX_LOGIN_URL }}
+          SFDX_CLIENT_ID: ${{ secrets.SFDX_CLIENT_ID }}
+          SFDX_JWT_KEY: ${{ secrets.SFDX_JWT_KEY }}
+          SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
+        run: |
+          set -euo pipefail
+          METHOD=""
+          if [ -n "${SFDX_CLIENT_ID:-}" ] && [ -n "${SFDX_JWT_KEY:-}" ] && [ -n "${SFDX_USERNAME:-}" ]; then
+            METHOD="jwt"
+          elif [ -n "${SFDX_AUTH_URL:-}" ]; then
+            METHOD="sfdxurl"
+          elif [ -n "${SFDX_USERNAME:-}" ] && [ -n "${SFDX_PASSWORD:-}" ] && [ -n "${SFDX_SECURITY_TOKEN:-}" ]; then
+            METHOD="password"
+          fi
+          if [ -z "$METHOD" ]; then
+            echo "No supported auth method secrets found. Provide either (JWT) SFDX_CLIENT_ID + SFDX_JWT_KEY + SFDX_USERNAME, or (SFDX URL) SFDX_AUTH_URL, or (Password) SFDX_USERNAME + SFDX_PASSWORD + SFDX_SECURITY_TOKEN." >&2
+            exit 1
+          fi
+          echo "method=$METHOD" >> $GITHUB_OUTPUT
+          echo "Detected auth method: $METHOD"
+
+  build-test:
+    needs: validate-secrets
+    runs-on: ubuntu-latest
+    env:
+      SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
+      SFDX_PASSWORD: ${{ secrets.SFDX_PASSWORD }}
+      SFDX_SECURITY_TOKEN: ${{ secrets.SFDX_SECURITY_TOKEN }}
+      SFDX_LOGIN_URL: ${{ secrets.SFDX_LOGIN_URL }}
+      SFDX_CLIENT_ID: ${{ secrets.SFDX_CLIENT_ID }}
+      SFDX_JWT_KEY: ${{ secrets.SFDX_JWT_KEY }}
+      SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
+      ORG_ALIAS: ci-org
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install --global sfdx-cli
+          sfdx --version
+          sfdx plugins --core
+
+      - name: Install Code Analyzer (Scanner)
+        run: |
+          sfdx plugins:install @salesforce/sfdx-scanner
+          sfdx scanner --help | head -n 5
+
+      - name: Authenticate to Salesforce
+        run: |
+          set -euo pipefail
+          : "${SFDX_LOGIN_URL:=https://login.salesforce.com}"
+          if [ -n "${SFDX_CLIENT_ID:-}" ] && [ -n "${SFDX_JWT_KEY:-}" ] && [ -n "${SFDX_USERNAME:-}" ]; then
+            echo "Using JWT auth"
+            printf "%s" "$SFDX_JWT_KEY" > server.key
+            sfdx force:auth:jwt:grant -i "$SFDX_CLIENT_ID" -f server.key -u "$SFDX_USERNAME" -r "$SFDX_LOGIN_URL" -a "$ORG_ALIAS"
+          elif [ -n "${SFDX_AUTH_URL:-}" ]; then
+            echo "Using SFDX auth URL"
+            printf "%s" "$SFDX_AUTH_URL" > sfdx_auth.txt
+            sfdx force:auth:sfdxurl:store -f sfdx_auth.txt -a "$ORG_ALIAS"
+          elif [ -n "${SFDX_USERNAME:-}" ] && [ -n "${SFDX_PASSWORD:-}" ] && [ -n "${SFDX_SECURITY_TOKEN:-}" ]; then
+            echo "Using password+token auth"
+            sfdx force:auth:login -r "$SFDX_LOGIN_URL" -u "$SFDX_USERNAME" -p "${SFDX_PASSWORD}${SFDX_SECURITY_TOKEN}" -a "$ORG_ALIAS"
+          else
+            echo "No supported auth method secrets found." >&2
+            exit 1
+          fi
+          sfdx force:org:display -u "$ORG_ALIAS"
+
+      - name: Run Code Analyzer
+        continue-on-error: true
+        run: |
+          sfdx scanner:run --target "RouteLogic-v4.0.0/force-app" --format sarif --outfile scanner-results.sarif || true
+
+      - name: Upload Scanner Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scanner-results
+          path: scanner-results.sarif
+
+      - name: Deploy metadata (deploy-package)
+        run: |
+          sfdx force:source:deploy -p RouteLogic-v4.0.0/deploy-package -u "$ORG_ALIAS" -l RunLocalTests
+
+      - name: Run Apex tests
+        run: |
+          mkdir -p test-results
+          sfdx force:apex:test:run -u "$ORG_ALIAS" -c -r junit -d test-results -w 60
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apex-test-results
+          path: test-results
+
+
