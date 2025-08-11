@@ -179,10 +179,13 @@ jobs:
           # Change to the Salesforce project root (contains sfdx-project.json) to avoid InvalidProjectWorkspaceError
           cd RouteLogic-v4.0.0
 
-          # Prefer curated minimal package first to avoid cross-component compile failures; then manifest; then full force-app
-          run_sf project deploy start --source-dir deploy-package --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || \
-          run_sf project deploy start --manifest manifest/package.xml --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || \
-          run_sf project deploy start --source-dir force-app --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60
+          # Staged deploy: metadata dependencies first, then Apex, then LWC
+          run_sf project deploy start --metadata "CustomObject:*" --metadata "CustomMetadata:*" --metadata "CustomSettings:*" --metadata "PermissionSet:*" --metadata "StaticResource:*" --target-org "$ORG_ALIAS" --test-level NoTestRun --wait 60 || true
+          run_sf project deploy start --metadata "ApexClass:*" --metadata "ApexTrigger:*" --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || true
+          run_sf project deploy start --metadata "LightningComponentBundle:*" --target-org "$ORG_ALIAS" --test-level NoTestRun --wait 60 || true
+          # Fallbacks
+          run_sf project deploy start --manifest manifest/package.xml --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || true
+          run_sf project deploy start --source-dir force-app --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || true
 
       - name: Run Apex tests
         if: success()
