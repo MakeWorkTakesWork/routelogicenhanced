@@ -154,6 +154,7 @@ jobs:
           path: scanner-results.sarif
 
       - name: Deploy metadata (deploy-package)
+        id: deploy
         continue-on-error: true
         run: |
           set -euo pipefail
@@ -188,7 +189,7 @@ jobs:
           run_sf project deploy start --source-dir force-app --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || true
 
       - name: Run Apex tests
-        if: success()
+        if: steps.deploy.outcome == 'success'
         run: |
           set -euo pipefail
           if command -v sf >/dev/null 2>&1; then
