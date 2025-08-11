@@ -67,6 +67,11 @@ jobs:
           sfdx --version
           sfdx plugins --core
 
+      - name: Ensure sf deploy/retrieve plugin
+        run: |
+          sf plugins install @salesforce/plugin-deploy-retrieve || true
+          sf plugins list || true
+
       - name: Install Code Analyzer (Scanner)
         run: |
           sf plugins install @salesforce/sfdx-scanner || sfdx plugins:install @salesforce/sfdx-scanner
