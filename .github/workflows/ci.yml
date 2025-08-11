@@ -157,7 +157,8 @@ jobs:
         id: deploy
         continue-on-error: true
         run: |
-          set -euo pipefail
+          # Don't exit on first failure; we aggregate success across attempts
+          set -u -o pipefail
           echo "PATH: $PATH"
           which sf || true
           which sfdx || true
@@ -180,16 +181,23 @@ jobs:
           # Change to the Salesforce project root (contains sfdx-project.json) to avoid InvalidProjectWorkspaceError
           cd RouteLogic-v4.0.0
 
+          ok=0
           # Staged deploy: metadata dependencies first, then Apex, then LWC
-          run_sf project deploy start --metadata "CustomObject:*" --metadata "CustomMetadata:*" --metadata "CustomSettings:*" --metadata "PermissionSet:*" --metadata "StaticResource:*" --target-org "$ORG_ALIAS" --test-level NoTestRun --wait 60 || true
-          run_sf project deploy start --metadata "ApexClass:*" --metadata "ApexTrigger:*" --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || true
-          run_sf project deploy start --metadata "LightningComponentBundle:*" --target-org "$ORG_ALIAS" --test-level NoTestRun --wait 60 || true
+          run_sf project deploy start --metadata "CustomObject:*" --metadata "CustomMetadata:*" --metadata "CustomSettings:*" --metadata "PermissionSet:*" --metadata "StaticResource:*" --target-org "$ORG_ALIAS" --test-level NoTestRun --wait 60
+          if [ $? -eq 0 ]; then ok=1; fi
+          run_sf project deploy start --metadata "ApexClass:*" --metadata "ApexTrigger:*" --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60
+          if [ $? -eq 0 ]; then ok=1; fi
+          run_sf project deploy start --metadata "LightningComponentBundle:*" --target-org "$ORG_ALIAS" --test-level NoTestRun --wait 60
+          if [ $? -eq 0 ]; then ok=1; fi
           # Fallbacks
-          run_sf project deploy start --manifest manifest/package.xml --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || true
-          run_sf project deploy start --source-dir force-app --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || true
+          run_sf project deploy start --manifest manifest/package.xml --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60
+          if [ $? -eq 0 ]; then ok=1; fi
+          run_sf project deploy start --source-dir force-app --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60
+          if [ $? -eq 0 ]; then ok=1; fi
+          echo "ok=$ok" >> $GITHUB_OUTPUT
 
       - name: Run Apex tests
-        if: steps.deploy.outcome == 'success'
+        if: steps.deploy.outputs.ok == '1'
         run: |
           set -euo pipefail
           if command -v sf >/dev/null 2>&1; then
