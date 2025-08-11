@@ -69,8 +69,8 @@ jobs:
 
       - name: Install Code Analyzer (Scanner)
         run: |
-          sfdx plugins:install @salesforce/sfdx-scanner
-          sfdx scanner --help | head -n 5
+          sf plugins install @salesforce/sfdx-scanner || sfdx plugins:install @salesforce/sfdx-scanner
+          sf scanner --help | head -n 5 || sfdx scanner --help | head -n 5
 
       - name: Authenticate to Salesforce
         run: |
@@ -115,7 +115,7 @@ jobs:
       - name: Run Code Analyzer
         continue-on-error: true
         run: |
-          sfdx scanner:run --target "RouteLogic-v4.0.0/force-app" --format sarif --outfile scanner-results.sarif || true
+          sf scanner run --target "RouteLogic-v4.0.0/force-app" --format sarif --outfile scanner-results.sarif || sfdx scanner:run --target "RouteLogic-v4.0.0/force-app" --format sarif --outfile scanner-results.sarif || true
 
       - name: Upload Scanner Results
         if: always()
@@ -126,11 +126,13 @@ jobs:
 
       - name: Deploy metadata (deploy-package)
         run: |
+          sf project deploy start --source-dir RouteLogic-v4.0.0/deploy-package --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || \
           sfdx force:source:deploy -p RouteLogic-v4.0.0/deploy-package -u "$ORG_ALIAS" -l RunLocalTests
 
       - name: Run Apex tests
         run: |
           mkdir -p test-results
+          sf apex test run --target-org "$ORG_ALIAS" --result-format junit --output-dir test-results --wait 60 || \
           sfdx force:apex:test:run -u "$ORG_ALIAS" -c -r junit -d test-results -w 60
 
       - name: Upload Test Results
