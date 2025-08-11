@@ -80,23 +80,36 @@ jobs:
       - name: Authenticate to Salesforce
         run: |
           set -euo pipefail
+          # Resilient wrappers for sf/sfdx
+          if command -v sf >/dev/null 2>&1; then
+            run_sf() { sf "$@"; }
+          else
+            echo "sf not found in PATH; using npx @salesforce/cli"
+            run_sf() { npx --yes @salesforce/cli@latest "$@"; }
+          fi
+          if command -v sfdx >/dev/null 2>&1; then
+            run_sfdx() { sfdx "$@"; }
+          else
+            echo "sfdx not found in PATH; using npx sfdx-cli"
+            run_sfdx() { npx --yes sfdx-cli "$@"; }
+          fi
           : "${SFDX_LOGIN_URL:=https://login.salesforce.com}"
           EFFECTIVE_URL="${SFDX_INSTANCE_URL:-$SFDX_LOGIN_URL}"
           if [ -n "${SFDX_CLIENT_ID:-}" ] && [ -n "${SFDX_JWT_KEY:-}" ] && [ -n "${SFDX_USERNAME:-}" ]; then
             echo "Using JWT auth"
             printf "%s" "$SFDX_JWT_KEY" > "$HOME/server.key"
-            if ! sf org login jwt --client-id "$SFDX_CLIENT_ID" --username "$SFDX_USERNAME" --jwt-key-file "$HOME/server.key" --instance-url "$EFFECTIVE_URL" --alias "$ORG_ALIAS" --set-default; then
+            if ! run_sf org login jwt --client-id "$SFDX_CLIENT_ID" --username "$SFDX_USERNAME" --jwt-key-file "$HOME/server.key" --instance-url "$EFFECTIVE_URL" --alias "$ORG_ALIAS" --set-default; then
               echo "sf jwt login failed; trying sfdx..."
-              if ! sfdx force:auth:jwt:grant -i "$SFDX_CLIENT_ID" -f "$HOME/server.key" -u "$SFDX_USERNAME" -r "$SFDX_LOGIN_URL" -a "$ORG_ALIAS"; then
+              if ! run_sfdx force:auth:jwt:grant -i "$SFDX_CLIENT_ID" -f "$HOME/server.key" -u "$SFDX_USERNAME" -r "$SFDX_LOGIN_URL" -a "$ORG_ALIAS"; then
                 echo "JWT auth failed; attempting fallback..."
                 if [ -n "${SFDX_AUTH_URL:-}" ]; then
                   echo "Fallback: Using SFDX auth URL"
                   printf "%s" "$SFDX_AUTH_URL" > sfdx_auth.txt
-                  sfdx force:auth:sfdxurl:store -f sfdx_auth.txt -a "$ORG_ALIAS"
+                  run_sfdx force:auth:sfdxurl:store -f sfdx_auth.txt -a "$ORG_ALIAS"
                 elif [ -n "${SFDX_USERNAME:-}" ] && [ -n "${SFDX_PASSWORD:-}" ]; then
                   echo "Fallback: Using password login"
                   PASS_COMBINED="${SFDX_PASSWORD}${SFDX_SECURITY_TOKEN:-}"
-                  sfdx force:auth:password:login -r "$SFDX_LOGIN_URL" -u "$SFDX_USERNAME" -p "$PASS_COMBINED" -a "$ORG_ALIAS"
+                  run_sfdx force:auth:password:login -r "$SFDX_LOGIN_URL" -u "$SFDX_USERNAME" -p "$PASS_COMBINED" -a "$ORG_ALIAS"
                 else
                   echo "No fallback auth available." >&2
                   exit 1
@@ -106,21 +119,32 @@ jobs:
           elif [ -n "${SFDX_AUTH_URL:-}" ]; then
             echo "Using SFDX auth URL"
             printf "%s" "$SFDX_AUTH_URL" > sfdx_auth.txt
-            sfdx force:auth:sfdxurl:store -f sfdx_auth.txt -a "$ORG_ALIAS"
+            run_sfdx force:auth:sfdxurl:store -f sfdx_auth.txt -a "$ORG_ALIAS"
           elif [ -n "${SFDX_USERNAME:-}" ] && [ -n "${SFDX_PASSWORD:-}" ]; then
             echo "Using password login"
             PASS_COMBINED="${SFDX_PASSWORD}${SFDX_SECURITY_TOKEN:-}"
-            sfdx force:auth:password:login -r "$SFDX_LOGIN_URL" -u "$SFDX_USERNAME" -p "$PASS_COMBINED" -a "$ORG_ALIAS"
+            run_sfdx force:auth:password:login -r "$SFDX_LOGIN_URL" -u "$SFDX_USERNAME" -p "$PASS_COMBINED" -a "$ORG_ALIAS"
           else
             echo "No supported auth method secrets found." >&2
             exit 1
           fi
-          sfdx force:org:display -u "$ORG_ALIAS"
+          run_sfdx force:org:display -u "$ORG_ALIAS"
 
       - name: Run Code Analyzer
         continue-on-error: true
         run: |
-          sf scanner run --target "RouteLogic-v4.0.0/force-app" --format sarif --outfile scanner-results.sarif || sfdx scanner:run --target "RouteLogic-v4.0.0/force-app" --format sarif --outfile scanner-results.sarif || true
+          set -euo pipefail
+          if command -v sf >/dev/null 2>&1; then
+            run_sf() { sf "$@"; }
+          else
+            run_sf() { npx --yes @salesforce/cli@latest "$@"; }
+          fi
+          if command -v sfdx >/dev/null 2>&1; then
+            run_sfdx() { sfdx "$@"; }
+          else
+            run_sfdx() { npx --yes sfdx-cli "$@"; }
+          fi
+          run_sf scanner run --target "RouteLogic-v4.0.0/force-app" --format sarif --outfile scanner-results.sarif || run_sfdx scanner:run --target "RouteLogic-v4.0.0/force-app" --format sarif --outfile scanner-results.sarif || true
 
       - name: Upload Scanner Results
         if: always()
@@ -131,20 +155,52 @@ jobs:
 
       - name: Deploy metadata (deploy-package)
         run: |
-          echo "PATH: $PATH" && which sf || true && which sfdx || true
-          # Try Salesforce DX source deploy first (directory is in source format)
-          sf project deploy start --source-dir RouteLogic-v4.0.0/deploy-package --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || \
-          # If not recognized, try metadata-dir deploy
-          sf project deploy start --metadata-dir RouteLogic-v4.0.0/deploy-package --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || \
-          # Fallbacks to classic sfdx
-          sfdx force:source:deploy -p RouteLogic-v4.0.0/deploy-package -u "$ORG_ALIAS" -l RunLocalTests || \
-          sfdx force:mdapi:deploy -d RouteLogic-v4.0.0/deploy-package -u "$ORG_ALIAS" -l RunLocalTests -w 60
+          set -euo pipefail
+          echo "PATH: $PATH"
+          which sf || true
+          which sfdx || true
+
+          # Define resilient wrappers that fall back to npx if binaries are not in PATH
+          if command -v sf >/dev/null 2>&1; then
+            run_sf() { sf "$@"; }
+          else
+            echo "sf not found in PATH; using npx @salesforce/cli"
+            run_sf() { npx --yes @salesforce/cli@latest "$@"; }
+          fi
+
+          if command -v sfdx >/dev/null 2>&1; then
+            run_sfdx() { sfdx "$@"; }
+          else
+            echo "sfdx not found in PATH; using npx sfdx-cli"
+            run_sfdx() { npx --yes sfdx-cli "$@"; }
+          fi
+
+          # Prefer standard project sources and manifest first; then fall back to deploy-package
+          run_sf project deploy start --source-dir RouteLogic-v4.0.0/force-app --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || \
+          run_sf project deploy start --manifest RouteLogic-v4.0.0/manifest/package.xml --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || \
+          run_sf project deploy start --source-dir RouteLogic-v4.0.0/deploy-package --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || \
+          run_sf project deploy start --metadata-dir RouteLogic-v4.0.0/deploy-package --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || \
+          run_sfdx force:source:deploy -p RouteLogic-v4.0.0/force-app -u "$ORG_ALIAS" -l RunLocalTests || \
+          run_sfdx force:source:deploy -u "$ORG_ALIAS" -x RouteLogic-v4.0.0/manifest/package.xml -l RunLocalTests || \
+          run_sfdx force:source:deploy -p RouteLogic-v4.0.0/deploy-package -u "$ORG_ALIAS" -l RunLocalTests || \
+          run_sfdx force:mdapi:deploy -d RouteLogic-v4.0.0/deploy-package -u "$ORG_ALIAS" -l RunLocalTests -w 60
 
       - name: Run Apex tests
         run: |
+          set -euo pipefail
+          if command -v sf >/dev/null 2>&1; then
+            run_sf() { sf "$@"; }
+          else
+            run_sf() { npx --yes @salesforce/cli@latest "$@"; }
+          fi
+          if command -v sfdx >/dev/null 2>&1; then
+            run_sfdx() { sfdx "$@"; }
+          else
+            run_sfdx() { npx --yes sfdx-cli "$@"; }
+          fi
           mkdir -p test-results
-          sf apex test run --target-org "$ORG_ALIAS" --result-format junit --output-dir test-results --wait 60 || \
-          sfdx force:apex:test:run -u "$ORG_ALIAS" -c -r junit -d test-results -w 60
+          run_sf apex test run --target-org "$ORG_ALIAS" --result-format junit --output-dir test-results --wait 60 || \
+          run_sfdx force:apex:test:run -u "$ORG_ALIAS" -c -r junit -d test-results -w 60
 
       - name: Upload Test Results
         if: always()
