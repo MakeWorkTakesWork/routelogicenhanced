@@ -131,10 +131,13 @@ jobs:
 
       - name: Deploy metadata (deploy-package)
         run: |
-          # Try Salesforce DX source deploy first (if directory is in source format)
+          echo "PATH: $PATH" && which sf || true && which sfdx || true
+          # Try Salesforce DX source deploy first (directory is in source format)
           sf project deploy start --source-dir RouteLogic-v4.0.0/deploy-package --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || \
-          # If not in source format, use MDAPI deploy
+          # If not recognized, try metadata-dir deploy
           sf project deploy start --metadata-dir RouteLogic-v4.0.0/deploy-package --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60 || \
+          # Fallbacks to classic sfdx
+          sfdx force:source:deploy -p RouteLogic-v4.0.0/deploy-package -u "$ORG_ALIAS" -l RunLocalTests || \
           sfdx force:mdapi:deploy -d RouteLogic-v4.0.0/deploy-package -u "$ORG_ALIAS" -l RunLocalTests -w 60
 
       - name: Run Apex tests
