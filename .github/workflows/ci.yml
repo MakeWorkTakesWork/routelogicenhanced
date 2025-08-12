@@ -182,22 +182,28 @@ jobs:
           cd RouteLogic-v4.0.0
 
           ok=0
+          objects_ok=0
+          apex_ok=0
+          lwc_ok=0
           # Staged deploy: metadata dependencies first, then Apex, then LWC
           run_sf project deploy start --metadata "CustomObject:*" --metadata "CustomMetadata:*" --metadata "CustomSettings:*" --metadata "PermissionSet:*" --metadata "StaticResource:*" --target-org "$ORG_ALIAS" --test-level NoTestRun --wait 60
-          if [ $? -eq 0 ]; then ok=1; fi
+          if [ $? -eq 0 ]; then ok=1; objects_ok=1; fi
           run_sf project deploy start --metadata "ApexClass:*" --metadata "ApexTrigger:*" --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60
-          if [ $? -eq 0 ]; then ok=1; fi
+          if [ $? -eq 0 ]; then ok=1; apex_ok=1; fi
           run_sf project deploy start --metadata "LightningComponentBundle:*" --target-org "$ORG_ALIAS" --test-level NoTestRun --wait 60
-          if [ $? -eq 0 ]; then ok=1; fi
+          if [ $? -eq 0 ]; then ok=1; lwc_ok=1; fi
           # Fallbacks
           run_sf project deploy start --manifest manifest/package.xml --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60
-          if [ $? -eq 0 ]; then ok=1; fi
+          if [ $? -eq 0 ]; then ok=1; objects_ok=1; apex_ok=1; lwc_ok=1; fi
           run_sf project deploy start --source-dir force-app --target-org "$ORG_ALIAS" --test-level RunLocalTests --wait 60
-          if [ $? -eq 0 ]; then ok=1; fi
+          if [ $? -eq 0 ]; then ok=1; objects_ok=1; apex_ok=1; lwc_ok=1; fi
           echo "ok=$ok" >> $GITHUB_OUTPUT
+          echo "objects_ok=$objects_ok" >> $GITHUB_OUTPUT
+          echo "apex_ok=$apex_ok" >> $GITHUB_OUTPUT
+          echo "lwc_ok=$lwc_ok" >> $GITHUB_OUTPUT
 
       - name: Run Apex tests
-        if: steps.deploy.outputs.ok == '1'
+        if: steps.deploy.outputs.apex_ok == '1'
         run: |
           set -euo pipefail
           if command -v sf >/dev/null 2>&1; then
