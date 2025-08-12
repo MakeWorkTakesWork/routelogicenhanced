@@ -16,7 +16,6 @@
         <name>LightningComponentBundle</name>
     </types>
     <types>
-        <members>AI_Provider_Configuration__c</members>
         <members>AI_Processing_Status__c</members>
         <members>Route__c</members>
         <members>Route_Point__c</members>
@@ -36,16 +35,16 @@
         <members>AI_Key_Version__c</members>
         <members>AI_Archive_Reference__c</members>
         <members>AI_Audit_Event__c</members>
-        <members>Error_Log__c</members>
-        <name>CustomObject</name>
-    </types>
-    <types>
+        <members>Routing_Ledger__c</members>
+        <!-- Platform Events are CustomObjects -->
         <members>AI_Case_Request__e</members>
         <members>AI_Webhook_Response__e</members>
         <members>AI_Processing_Metric__e</members>
         <members>AI_Critical_Error__e</members>
         <members>AI_Audit_Platform_Event__e</members>
-        <name>PlatformEventChannel</name>
+        <members>Security_Alert__e</members>
+        <members>Error_Log__c</members>
+        <name>CustomObject</name>
     </types>
     <types>
         <members>AI_Configuration_Manager</members>
@@ -69,5 +68,5 @@
         <members>chartjs</members>
         <name>StaticResource</name>
     </types>
-    <version>59.0</version>
+    <version>64.0</version>
 </Package>
