@@ -209,6 +209,16 @@ export default class RouteLogicRuleBuilder extends LightningElement {
                 statusVariant: 'success'
             }
         ];
+
+        // Ensure derived flags are present
+        this.rules.forEach(rule => {
+            if (Array.isArray(rule.actions)) {
+                rule.actions = rule.actions.map(a => ({
+                    ...a,
+                    isStopProcessing: a.type === 'stop_processing'
+                }));
+            }
+        });
     }
     
     initializeDefaultRule() {
@@ -320,6 +330,13 @@ export default class RouteLogicRuleBuilder extends LightningElement {
         this.editingRule = rule;
         this.selectedObjectType = rule.objectType;
         this.loadObjectFields();
+        // Ensure derived flags for actions
+        if (Array.isArray(this.currentRule.actions)) {
+            this.currentRule.actions = this.currentRule.actions.map(a => ({
+                ...a,
+                isStopProcessing: a.type === 'stop_processing'
+            }));
+        }
         this.showRuleModal = true;
     }
     
@@ -415,7 +432,8 @@ export default class RouteLogicRuleBuilder extends LightningElement {
             id: Date.now(),
             type: 'route_to_provider',
             value: '',
-            parameters: {}
+            parameters: {},
+            isStopProcessing: false
         });
     }
     
@@ -430,6 +448,7 @@ export default class RouteLogicRuleBuilder extends LightningElement {
         if (action) {
             action.type = event.detail.value;
             action.value = ''; // Reset value when type changes
+            action.isStopProcessing = action.type === 'stop_processing';
         }
     }
     
@@ -439,6 +458,14 @@ export default class RouteLogicRuleBuilder extends LightningElement {
         if (action) {
             action.value = event.target.value;
         }
+    }
+
+    // Derived/computed helpers used by template
+    getActionDerived(action) {
+        return {
+            ...action,
+            isStopProcessing: action && action.type === 'stop_processing'
+        };
     }
     
     handleSaveRule() {

@@ -48,7 +48,7 @@ public with sharing class RoutingLedgerTriggerHandler {
             
             // Verify security hash integrity
             String expectedHash = generateSecurityHash(oldRecord);
-            if (!Crypto.equals(oldRecord.Security_Hash__c, expectedHash)) {
+            if (!RouteLogicSecurityUtils.timingSafeEquals(oldRecord.Security_Hash__c, expectedHash)) {
                 ledger.addError(HASH_VERIFICATION_ERROR);
             }
         }
@@ -78,8 +78,7 @@ public with sharing class RoutingLedgerTriggerHandler {
             ledger.Routing_Engine_Decision__c,
             ledger.Handoff_Status__c,
             String.valueOf(ledger.Handoff_Timestamp__c),
-            UserInfo.getOrganizationId(), // Include org ID for uniqueness
-            String.valueOf(DateTime.now().getTime()) // Include timestamp for uniqueness
+            UserInfo.getOrganizationId() // Deterministic: remove dynamic timestamp
         };
         
         // Join components and generate hash
@@ -171,7 +170,7 @@ public with sharing class RoutingLedgerTriggerHandler {
         String expectedHash = generateSecurityHash(verificationCopy);
         
         // Compare with stored hash using timing-safe comparison
-        return Crypto.equals(ledger.Security_Hash__c, expectedHash);
+        return RouteLogicSecurityUtils.timingSafeEquals(ledger.Security_Hash__c, expectedHash);
     }
     
     /**
