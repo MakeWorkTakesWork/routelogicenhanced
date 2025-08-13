@@ -74,7 +74,9 @@ export default class AiConfigurationManager extends LightningElement {
                 ...provider,
                 isExpanded: false,
                 isEditing: false,
-                originalValues: { ...provider }
+                originalValues: { ...provider },
+                statusLabel: provider.connectionStatus ? provider.connectionStatus : 'Unknown',
+                statusVariant: provider.connectionStatus === 'success' ? 'success' : 'base'
             }));
         } else if (result.error) {
             this.handleError('Failed to load provider settings', result.error);

@@ -122,8 +122,8 @@
                                                         <p><strong>Priority:</strong> {provider.Priority__c}</p>
                                                      <p><strong>Status:</strong> 
                                                             <lightning-badge 
-                                                                label={provider.connectionStatus || 'Unknown'}
-                                                                variant={provider.connectionStatus === 'success' ? 'success' : 'base'}>
+                                                                label={provider.statusLabel}
+                                                                variant={provider.statusVariant}>
                                                             </lightning-badge>
                                                         </p>
                                                     </div>
