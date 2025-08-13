@@ -1,0 +1,110 @@
+name: Package 2GP
+
+on:
+  workflow_dispatch:
+    inputs:
+      versionName:
+        description: "Package Version Name (e.g., v4.0.0-build.1)"
+        required: true
+        default: "v4.0.0-build.0"
+      tag:
+        description: "Git ref/branch to package (default: current)"
+        required: false
+        default: ""
+      skipValidation:
+        description: "Skip version validation (faster create)"
+        required: true
+        default: false
+        type: boolean
+      installKey:
+        description: "Optional install key (blank to bypass)"
+        required: false
+        default: ""
+
+jobs:
+  package-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install --global @salesforce/cli @salesforce/plugin-packaging @salesforce/plugin-deploy-retrieve
+          sf --version
+          sf plugins --core
+
+      - name: Authenticate Dev Hub
+        env:
+          DEVHUB_AUTH_URL: ${{ secrets.DEVHUB_AUTH_URL }}
+          SFDX_CLIENT_ID: ${{ secrets.SFDX_CLIENT_ID }}
+          SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
+          SFDX_JWT_KEY: ${{ secrets.SFDX_JWT_KEY }}
+          SFDX_LOGIN_URL: ${{ secrets.SFDX_LOGIN_URL }}
+        run: |
+          set -e
+          if [ -n "$DEVHUB_AUTH_URL" ]; then
+            echo "$DEVHUB_AUTH_URL" > devhub.sfdxurl
+            sf org login sfdx-url --sfdx-url-file devhub.sfdxurl --alias devhub --set-default-dev-hub
+          elif [ -n "$SFDX_CLIENT_ID" ] && [ -n "$SFDX_USERNAME" ] && [ -n "$SFDX_JWT_KEY" ] && [ -n "$SFDX_LOGIN_URL" ]; then
+            echo "$SFDX_JWT_KEY" > server.key
+            sf org login jwt --client-id "$SFDX_CLIENT_ID" --jwt-key-file server.key --username "$SFDX_USERNAME" --instance-url "$SFDX_LOGIN_URL" --alias devhub --set-default-dev-hub
+          else
+            echo "Missing Dev Hub auth. Set DEVHUB_AUTH_URL or JWT secrets (SFDX_CLIENT_ID, SFDX_USERNAME, SFDX_JWT_KEY, SFDX_LOGIN_URL)." >&2
+            exit 1
+          fi
+          sf org display --target-org devhub
+
+      - name: Verify sfdx-project.json exists
+        run: |
+          if [ ! -f "sfdx-project.json" ]; then
+            echo "sfdx-project.json not found at repo root. This workflow expects a 2GP-enabled repo with packages configured." >&2
+            echo "Add sfdx-project.json with packageDirectories and a package alias before running packaging." >&2
+            exit 1
+          fi
+          cat sfdx-project.json
+
+      - name: Create package version
+        id: create
+        env:
+          VERSION_NAME: ${{ github.event.inputs.versionName }}
+          INSTALL_KEY: ${{ github.event.inputs.installKey }}
+          SKIP_VALIDATION: ${{ github.event.inputs.skipValidation }}
+        run: |
+          set -e
+          FLAGS="--code-coverage --installation-key-bypass"
+          if [ -n "$INSTALL_KEY" ]; then
+            FLAGS="--installation-key $INSTALL_KEY"
+          fi
+          if [ "$SKIP_VALIDATION" = "true" ]; then
+            FLAGS="$FLAGS --skip-validation"
+          fi
+          echo "Creating package version: $VERSION_NAME"
+          sf package version create --package "RouteLogicEnhanced" --tag "${VERSION_NAME}" --version-name "$VERSION_NAME" $FLAGS --wait 120 --json > create.json
+          cat create.json
+          VERSION_ID=$(jq -r '.result.SubscriberPackageVersionId // .result.SubscriberPackageVersion.Id' create.json)
+          echo "version_id=$VERSION_ID" >> $GITHUB_OUTPUT
+
+      - name: Promote package version (optional)
+        if: ${{ !github.event.inputs.skipValidation }}
+        env:
+          VERSION_ID: ${{ steps.create.outputs.version_id }}
+        run: |
+          set -e
+          echo "Promoting version $VERSION_ID"
+          sf package version promote --package "$VERSION_ID" --no-prompt
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: 2gp-${{ github.event.inputs.versionName }}
+          path: |
+            create.json
+
