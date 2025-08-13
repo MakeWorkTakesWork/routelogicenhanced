@@ -37,7 +37,6 @@ jobs:
   apex-tests:
     needs: scan
     runs-on: ubuntu-latest
-    if: ${{ secrets.SFDX_AUTH_URL || (secrets.SFDX_USERNAME && secrets.SFDX_PASSWORD && secrets.SFDX_SECURITY_TOKEN && secrets.SFDX_LOGIN_URL) }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Salesforce CLI
@@ -45,6 +44,7 @@ jobs:
           npm install --global @salesforce/cli @salesforce/plugin-deploy-retrieve
           sf --version
       - name: Authenticate to Org
+        if: ${{ secrets.SFDX_AUTH_URL != '' || (secrets.SFDX_USERNAME != '' && secrets.SFDX_PASSWORD != '' && secrets.SFDX_SECURITY_TOKEN != '' && secrets.SFDX_LOGIN_URL != '') }}
         env:
           SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
           SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
@@ -62,6 +62,11 @@ jobs:
           fi
           sf org display --target-org ciOrg
       - name: Deploy metadata and run tests
+        if: ${{ secrets.SFDX_AUTH_URL != '' || (secrets.SFDX_USERNAME != '' && secrets.SFDX_PASSWORD != '' && secrets.SFDX_SECURITY_TOKEN != '' && secrets.SFDX_LOGIN_URL != '') }}
         run: |
           set -e
           sf project deploy start --source-dir RouteLogic-v4.0.0/force-app/main/default --target-org ciOrg --tests "*" --test-level RunLocalTests --wait 60
+      - name: Skip tests (no org secrets configured)
+        if: ${{ !(secrets.SFDX_AUTH_URL != '' || (secrets.SFDX_USERNAME != '' && secrets.SFDX_PASSWORD != '' && secrets.SFDX_SECURITY_TOKEN != '' && secrets.SFDX_LOGIN_URL != '')) }}
+        run: |
+          echo "Skipping Apex tests; no org auth secrets configured for this repository."
