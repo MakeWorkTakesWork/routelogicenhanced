@@ -47,8 +47,8 @@ public with sharing class RoutingLedgerTriggerHandler {
             }
             
             // Verify security hash integrity
-            String expectedHash = generateSecurityHash(oldRecord);
-            if (!Crypto.equals(oldRecord.Security_Hash__c, expectedHash)) {
+            String expectedHash = generateDeterministicSecurityHash(oldRecord);
+            if (!RouteLogicSecurityUtils.timingSafeEquals(oldRecord.Security_Hash__c, expectedHash)) {
                 ledger.addError(HASH_VERIFICATION_ERROR);
             }
         }
@@ -78,14 +78,30 @@ public with sharing class RoutingLedgerTriggerHandler {
             ledger.Routing_Engine_Decision__c,
             ledger.Handoff_Status__c,
             String.valueOf(ledger.Handoff_Timestamp__c),
-            UserInfo.getOrganizationId(), // Include org ID for uniqueness
-            String.valueOf(DateTime.now().getTime()) // Include timestamp for uniqueness
+            UserInfo.getOrganizationId()
         };
         
         // Join components and generate hash
         String hashInput = String.join(hashComponents, '|');
         Blob hashBlob = Crypto.generateDigest('SHA-256', Blob.valueOf(hashInput));
         
+        return EncodingUtil.convertToHex(hashBlob);
+    }
+
+    /**
+     * @description Deterministic hash used for verification (excludes any volatile values)
+     */
+    public static String generateDeterministicSecurityHash(Routing_Ledger__c ledger) {
+        List<String> hashComponents = new List<String>{
+            String.valueOf(ledger.Case__c),
+            ledger.Initial_AI_Provider__c,
+            ledger.Routing_Engine_Decision__c,
+            ledger.Handoff_Status__c,
+            String.valueOf(ledger.Handoff_Timestamp__c),
+            UserInfo.getOrganizationId()
+        };
+        String hashInput = String.join(hashComponents, '|');
+        Blob hashBlob = Crypto.generateDigest('SHA-256', Blob.valueOf(hashInput));
         return EncodingUtil.convertToHex(hashBlob);
     }
     
@@ -168,10 +184,10 @@ public with sharing class RoutingLedgerTriggerHandler {
         verificationCopy.Security_Hash__c = null;
         
         // Generate expected hash
-        String expectedHash = generateSecurityHash(verificationCopy);
+        String expectedHash = generateDeterministicSecurityHash(verificationCopy);
         
         // Compare with stored hash using timing-safe comparison
-        return Crypto.equals(ledger.Security_Hash__c, expectedHash);
+        return RouteLogicSecurityUtils.timingSafeEquals(ledger.Security_Hash__c, expectedHash);
     }
     
     /**

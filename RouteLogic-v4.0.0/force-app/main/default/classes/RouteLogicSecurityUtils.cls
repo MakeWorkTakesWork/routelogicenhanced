@@ -243,7 +243,7 @@ public with sharing class RouteLogicSecurityUtils {
             Blob hmac = Crypto.generateMac('HmacSHA256', Blob.valueOf(payload), Blob.valueOf(secret));
             String expectedSignature = EncodingUtil.convertToHex(hmac);
             
-            return Crypto.equals(signature, expectedSignature);
+            return timingSafeEquals(signature, expectedSignature);
         } catch (Exception e) {
             System.debug(LoggingLevel.ERROR, 'HMAC validation failed: ' + e.getMessage());
             return false;
@@ -337,7 +337,7 @@ public with sharing class RouteLogicSecurityUtils {
         }
         
         try {
-            return Security.stripInaccessible(accessType, records).getRecords();
+            return Security.stripInaccessible(System.AccessType.valueOf(accessType.name()), records).getRecords();
         } catch (Exception e) {
             throw new SecurityException('Failed to strip inaccessible fields: ' + e.getMessage());
         }
@@ -361,7 +361,7 @@ public with sharing class RouteLogicSecurityUtils {
             // Use Security.stripInaccessible with UPDATABLE access type
             // This removes all fields that the current user cannot update
             SObjectAccessDecision decision = Security.stripInaccessible(
-                AccessType.UPDATABLE, 
+                System.AccessType.valueOf(AccessType.UPDATABLE.name()), 
                 records
             );
             
@@ -374,6 +374,48 @@ public with sharing class RouteLogicSecurityUtils {
         } catch (Exception e) {
             // Handle any other exceptions that might occur
             throw new SecurityException('Failed to enforce update security: ' + e.getMessage());
+        }
+    }
+
+    /**
+     * @description Enforce field-level security for create operations
+     * @param records List of SObject records to sanitize before DML insert
+     * @return List of records with fields removed that the current user cannot create
+     */
+    public static List<SObject> enforceCreateSecurity(List<SObject> records) {
+        if (records == null || records.isEmpty()) {
+            return records;
+        }
+
+        try {
+            SObjectAccessDecision decision = Security.stripInaccessible(
+                System.AccessType.valueOf(AccessType.CREATABLE.name()),
+                records
+            );
+            return decision.getRecords();
+        } catch (Exception e) {
+            throw new SecurityException('Failed to enforce create security: ' + e.getMessage());
+        }
+    }
+
+    /**
+     * @description Enforce field-level security for delete operations
+     * @param records List of SObject records to sanitize before DML delete
+     * @return List of records the current user is allowed to delete
+     */
+    public static List<SObject> enforceDeleteSecurity(List<SObject> records) {
+        if (records == null || records.isEmpty()) {
+            return records;
+        }
+
+        try {
+            SObjectAccessDecision decision = Security.stripInaccessible(
+                System.AccessType.valueOf(AccessType.DELETABLE.name()),
+                records
+            );
+            return decision.getRecords();
+        } catch (Exception e) {
+            throw new SecurityException('Failed to enforce delete security: ' + e.getMessage());
         }
     }
     
@@ -398,6 +440,28 @@ public with sharing class RouteLogicSecurityUtils {
         CREATABLE, 
         UPDATABLE,
         DELETABLE
+    }
+
+    /**
+     * @description Timing-safe string comparison to mitigate timing attacks
+     * @param a First string
+     * @param b Second string
+     * @return True if strings are equal
+     */
+    public static Boolean timingSafeEquals(String a, String b) {
+        if (a == null || b == null) {
+            return false;
+        }
+        Integer diff = Math.abs(a.length() - b.length());
+        Integer minLen = Math.min(a.length(), b.length());
+        for (Integer i = 0; i < minLen; i++) {
+            String ca = a.substring(i, i + 1);
+            String cb = b.substring(i, i + 1);
+            if (ca != cb) {
+                diff++;
+            }
+        }
+        return diff == 0;
     }
 }
 
