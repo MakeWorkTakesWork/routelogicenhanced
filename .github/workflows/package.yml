@@ -1,0 +1,117 @@
+name: Package (2GP)
+
+on:
+  workflow_dispatch:
+    inputs:
+      promote:
+        description: "Promote created package version (release)"
+        required: false
+        default: "false"
+      installation_key:
+        description: "Optional install key (leave blank to bypass)"
+        required: false
+        default: ""
+
+jobs:
+  build-2gp:
+    runs-on: ubuntu-latest
+    env:
+      DEVHUB_USERNAME: ${{ secrets.DEVHUB_USERNAME }}
+      DEVHUB_PASSWORD: ${{ secrets.DEVHUB_PASSWORD }}
+      DEVHUB_SECURITY_TOKEN: ${{ secrets.DEVHUB_SECURITY_TOKEN }}
+      DEVHUB_LOGIN_URL: ${{ secrets.DEVHUB_LOGIN_URL }}
+      DEVHUB_CLIENT_ID: ${{ secrets.DEVHUB_CLIENT_ID }}
+      DEVHUB_JWT_KEY: ${{ secrets.DEVHUB_JWT_KEY }}
+      DEVHUB_AUTH_URL: ${{ secrets.DEVHUB_AUTH_URL }}
+      DEV_HUB_ALIAS: devhub
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install --global @salesforce/cli sfdx-cli
+          sf --version || true
+          sfdx --version || true
+
+      - name: Authenticate to Dev Hub
+        run: |
+          set -euo pipefail
+          if command -v sf >/dev/null 2>&1; then run_sf() { sf "$@"; }; else run_sf() { npx --yes @salesforce/cli@latest "$@"; }; fi
+          if command -v sfdx >/dev/null 2>&1; then run_sfdx() { sfdx "$@"; }; else run_sfdx() { npx --yes sfdx-cli "$@"; }; fi
+          : "${DEVHUB_LOGIN_URL:=https://login.salesforce.com}"
+          # Prefer SFDX auth URL, then JWT, then password
+          if [ -n "${DEVHUB_AUTH_URL:-}" ]; then
+            printf "%s" "$DEVHUB_AUTH_URL" > devhub_sfdxurl.txt
+            run_sfdx force:auth:sfdxurl:store -f devhub_sfdxurl.txt -a "$DEV_HUB_ALIAS"
+          elif [ -n "${DEVHUB_CLIENT_ID:-}" ] && [ -n "${DEVHUB_JWT_KEY:-}" ] && [ -n "${DEVHUB_USERNAME:-}" ]; then
+            printf "%s" "$DEVHUB_JWT_KEY" > "$HOME/devhub.key"
+            run_sf org login jwt --client-id "$DEVHUB_CLIENT_ID" --username "$DEVHUB_USERNAME" --jwt-key-file "$HOME/devhub.key" --instance-url "${DEVHUB_LOGIN_URL}" --alias "$DEV_HUB_ALIAS" --set-default-dev-hub
+          elif [ -n "${DEVHUB_USERNAME:-}" ] && [ -n "${DEVHUB_PASSWORD:-}" ]; then
+            PASS_COMBINED="${DEVHUB_PASSWORD}${DEVHUB_SECURITY_TOKEN:-}"
+            run_sfdx force:auth:password:login -r "$DEVHUB_LOGIN_URL" -u "$DEVHUB_USERNAME" -p "$PASS_COMBINED" -a "$DEV_HUB_ALIAS"
+          else
+            echo "No Dev Hub auth secrets configured (DEVHUB_AUTH_URL or JWT or password)." >&2
+            exit 1
+          fi
+          run_sfdx force:org:display -u "$DEV_HUB_ALIAS"
+
+      - name: Ensure package exists (create if missing)
+        id: ensure_pkg
+        run: |
+          set -euo pipefail
+          if command -v sf >/dev/null 2>&1; then run_sf() { sf "$@"; }; else run_sf() { npx --yes @salesforce/cli@latest "$@"; }; fi
+          PKG_NAME="RouteLogic Enhanced"
+          # List packages and try to find by name
+          run_sf package list --target-dev-hub "$DEV_HUB_ALIAS" --json > pkgs.json || true
+          PKG_ID=$(jq -r ".result[] | select(.Name==\"${PKG_NAME}\") | .Id" pkgs.json | head -n1)
+          if [ -z "${PKG_ID}" ] || [ "${PKG_ID}" = "null" ]; then
+            echo "Creating managed 2GP package ${PKG_NAME}..."
+            run_sf package create --name "$PKG_NAME" --package-type Managed --path force-app --target-dev-hub "$DEV_HUB_ALIAS" --namespace routelogic --org-dependent false --json > create_pkg.json
+            PKG_ID=$(jq -r ".result.Id" create_pkg.json)
+          fi
+          echo "package_id=${PKG_ID}" >> $GITHUB_OUTPUT
+
+      - name: Create package version
+        id: pv
+        run: |
+          set -euo pipefail
+          if command -v sf >/dev/null 2>&1; then run_sf() { sf "$@"; }; else run_sf() { npx --yes @salesforce/cli@latest "$@"; }; fi
+          PKG_ID="${{ steps.ensure_pkg.outputs.package_id }}"
+          INSTALL_KEY="${{ inputs.installation_key }}"
+          KEY_FLAG="--installation-key-bypass"
+          if [ -n "$INSTALL_KEY" ]; then KEY_FLAG="--installation-key $INSTALL_KEY"; fi
+          run_sf package version create --package "$PKG_ID" --code-coverage --wait 120 --target-dev-hub "$DEV_HUB_ALIAS" $KEY_FLAG --json > pv.json
+          SPV_ID=$(jq -r ".result.SubscriberPackageVersionId // .result.SubscriberPackageVersion.Id" pv.json)
+          PV_ID=$(jq -r ".result.Id // .result.PackageVersionId // .result.SubscriberPackageVersion.Package2VersionId" pv.json)
+          echo "spv_id=${SPV_ID}" >> $GITHUB_OUTPUT
+          echo "pv_id=${PV_ID}" >> $GITHUB_OUTPUT
+          echo "Created version: SPV=$SPV_ID PV=$PV_ID"
+          echo "$SPV_ID" > subscriberPackageVersionId.txt
+          echo "$PV_ID" > packageVersionId.txt
+
+      - name: Optionally promote version
+        if: ${{ inputs.promote == 'true' }}
+        run: |
+          set -euo pipefail
+          if command -v sf >/dev/null 2>&1; then run_sf() { sf "$@"; }; else run_sf() { npx --yes @salesforce/cli@latest "$@"; }; fi
+          SPV_ID="${{ steps.pv.outputs.spv_id }}"
+          # Try sf no-prompt flag, fall back to sfdx syntax if needed
+          run_sf package version promote --package "$SPV_ID" --no-prompt --target-dev-hub "$DEV_HUB_ALIAS" || \
+          sfdx force:package:version:promote -p "$SPV_ID" -n -v "$DEV_HUB_ALIAS"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-version-ids
+          path: |
+            pv.json
+            pkgs.json
+            create_pkg.json
+            subscriberPackageVersionId.txt
+            packageVersionId.txt
+
