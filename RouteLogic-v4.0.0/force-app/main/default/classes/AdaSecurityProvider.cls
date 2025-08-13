@@ -33,7 +33,7 @@ public with sharing class AdaSecurityProvider implements IAIProviderSecurity {
             String expectedSignature = EncodingUtil.convertToHex(hmac);
             
             // Timing-safe comparison
-            return Crypto.equals(signature, expectedSignature);
+            return RouteLogicSecurityUtils.timingSafeEquals(signature, expectedSignature);
             
         } catch (Exception e) {
             ErrorLogService.logError('Ada webhook validation failed', e, signature);
@@ -245,7 +245,7 @@ public with sharing class AdaSecurityProvider implements IAIProviderSecurity {
             )
         );
         
-        return Crypto.equals(signature, expectedSignature);
+        return RouteLogicSecurityUtils.timingSafeEquals(signature, expectedSignature);
     }
     
     // PII removal methods

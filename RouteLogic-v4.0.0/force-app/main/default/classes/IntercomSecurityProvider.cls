@@ -40,7 +40,7 @@ public with sharing class IntercomSecurityProvider implements IAIProviderSecurit
             String expectedHash = EncodingUtil.convertToHex(hmac);
             
             // Timing-safe comparison
-            return Crypto.equals(providedHash, expectedHash);
+            return RouteLogicSecurityUtils.timingSafeEquals(providedHash, expectedHash);
             
         } catch (Exception e) {
             ErrorLogService.logError('Intercom webhook validation failed', e, signature);

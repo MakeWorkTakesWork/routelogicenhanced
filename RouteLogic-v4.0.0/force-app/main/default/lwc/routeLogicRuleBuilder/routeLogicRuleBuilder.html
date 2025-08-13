@@ -257,7 +257,7 @@
                                             </div>
                                             <div class="slds-col slds-size_1-of-2">
                                                 <template if:true={action.type}>
-                                                    <template if:false={action.type === 'stop_processing'}>
+                                                    <template if:false={action.isStopProcessing}>
                                                         <lightning-input
                                                             label="Value"
                                                             value={action.value}

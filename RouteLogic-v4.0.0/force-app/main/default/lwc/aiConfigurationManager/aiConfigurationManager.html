@@ -120,9 +120,9 @@
                                                     </div>
                                                     <div class="slds-col slds-size_1-of-2">
                                                         <p><strong>Priority:</strong> {provider.Priority__c}</p>
-                                                        <p><strong>Status:</strong> 
+                                                     <p><strong>Status:</strong> 
                                                             <lightning-badge 
-                                                                label={provider.connectionStatus ? provider.connectionStatus : 'Unknown'}
+                                                                label={provider.connectionStatus || 'Unknown'}
                                                                 variant={provider.connectionStatus === 'success' ? 'success' : 'base'}>
                                                             </lightning-badge>
                                                         </p>

@@ -228,6 +228,30 @@ public with sharing class RouteLogicSecurityUtils {
     }
     
     /**
+     * @description Timing-safe string comparison to prevent timing attacks
+     * @param a First string
+     * @param b Second string
+     * @return True if strings are equal, false otherwise, evaluated in constant time
+     */
+    public static Boolean timingSafeEquals(String a, String b) {
+        String left = a == null ? '' : a;
+        String right = b == null ? '' : b;
+
+        Integer leftLen = left.length();
+        Integer rightLen = right.length();
+        Integer maxLen = Math.max(leftLen, rightLen);
+        Integer diff = leftLen ^ rightLen;
+
+        for (Integer i = 0; i < maxLen; i++) {
+            String la = (i < leftLen) ? left.substring(i, i + 1) : '\u0000';
+            String rb = (i < rightLen) ? right.substring(i, i + 1) : '\u0000';
+            diff = diff | (la == rb ? 0 : 1);
+        }
+
+        return diff == 0;
+    }
+
+    /**
      * @description Validate HMAC signature for webhook security
      * @param payload The webhook payload
      * @param signature The provided signature
@@ -243,7 +267,7 @@ public with sharing class RouteLogicSecurityUtils {
             Blob hmac = Crypto.generateMac('HmacSHA256', Blob.valueOf(payload), Blob.valueOf(secret));
             String expectedSignature = EncodingUtil.convertToHex(hmac);
             
-            return Crypto.equals(signature, expectedSignature);
+            return timingSafeEquals(signature, expectedSignature);
         } catch (Exception e) {
             System.debug(LoggingLevel.ERROR, 'HMAC validation failed: ' + e.getMessage());
             return false;
@@ -337,7 +361,14 @@ public with sharing class RouteLogicSecurityUtils {
         }
         
         try {
-            return Security.stripInaccessible(accessType, records).getRecords();
+            System.AccessType systemAccessType;
+            switch on accessType {
+                when READABLE { systemAccessType = System.AccessType.READABLE; }
+                when CREATABLE { systemAccessType = System.AccessType.CREATABLE; }
+                when UPDATABLE { systemAccessType = System.AccessType.UPDATABLE; }
+                when DELETABLE { systemAccessType = System.AccessType.DELETABLE; }
+            }
+            return Security.stripInaccessible(systemAccessType, records).getRecords();
         } catch (Exception e) {
             throw new SecurityException('Failed to strip inaccessible fields: ' + e.getMessage());
         }
@@ -361,7 +392,7 @@ public with sharing class RouteLogicSecurityUtils {
             // Use Security.stripInaccessible with UPDATABLE access type
             // This removes all fields that the current user cannot update
             SObjectAccessDecision decision = Security.stripInaccessible(
-                AccessType.UPDATABLE, 
+                System.AccessType.UPDATABLE, 
                 records
             );
             
