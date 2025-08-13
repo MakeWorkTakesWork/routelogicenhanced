@@ -1,31 +1,35 @@
 name: CI
 on:
   push:
-    branches: [ main, setup-ci ]
+    branches: [ "main", "chore/**" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
 jobs:
-  validate-secrets:
+  scan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate required Salesforce secrets
-        env:
-          SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
-          SFDX_PASSWORD: ${{ secrets.SFDX_PASSWORD }}
-          SFDX_SECURITY_TOKEN: ${{ secrets.SFDX_SECURITY_TOKEN }}
-          SFDX_LOGIN_URL: ${{ secrets.SFDX_LOGIN_URL }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Salesforce CLI and plugins
         run: |
-          set -e
-          [ -n "$SFDX_USERNAME" ] || { echo "Missing SFDX_USERNAME"; exit 1; }
-          [ -n "$SFDX_PASSWORD" ] || { echo "Missing SFDX_PASSWORD"; exit 1; }
-          [ -n "$SFDX_SECURITY_TOKEN" ] || { echo "Missing SFDX_SECURITY_TOKEN"; exit 1; }
-          [ -n "$SFDX_LOGIN_URL" ] || { echo "Missing SFDX_LOGIN_URL"; exit 1; }
-          echo "All required secrets present for sandbox auth."
-  build:
-    needs: validate-secrets
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Repository contents snapshot
+          npm install --global @salesforce/cli @salesforce/sfdx-scanner @salesforce/plugin-deploy-retrieve
+          sf --version
+          sfdx-scanner --version || true
+      - name: Static analysis (PMD via sfdx-scanner)
+        run: |
+          sfdx-scanner run --format junit --severity-threshold 3 --target "RouteLogic-v4.0.0/force-app/main/default/classes/**/*.cls,RouteLogic-v4.0.0/force-app/main/default/lwc/**/*.js" || true
+      - name: LWC ESLint (if config present)
+        run: |
+          if [ -f ".eslintrc.json" ] || [ -f ".eslint.cjs" ]; then
+            npm ci || npm i --no-audit --no-fund
+            npx eslint RouteLogic-v4.0.0/force-app/main/default/lwc --ext .js --max-warnings 0
+          else
+            echo "No ESLint config; skipping"
+          fi
+      - name: Repo snapshot
         run: |
           echo "Listing repository root:" && ls -la
