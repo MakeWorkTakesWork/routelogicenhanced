@@ -1,0 +1,15 @@
+{
+  "packageDirectories": [
+    {
+      "path": "force-app",
+      "default": true,
+      "package": "RouteLogic Enhanced",
+      "versionName": "RouteLogic Enhanced v4.0.0",
+      "versionNumber": "4.0.0.NEXT",
+      "versionDescription": "Enterprise AI-Powered Route Optimization Solution with Enhanced Security and AppExchange Readiness"
+    }
+  ],
+  "namespace": "routelogic",
+  "sfdcLoginUrl": "https://login.salesforce.com",
+  "sourceApiVersion": "59.0"
+}
