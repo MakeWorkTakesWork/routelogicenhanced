@@ -32,17 +32,29 @@ public with sharing class AIQueryOptimizationServiceMinimal {
             throw new IllegalArgumentException('sObject type ' + objectName + ' does not exist');
         }
         
+        // Check object-level access
+        Schema.DescribeSObjectResult objDesc = sObjectType.getDescribe();
+        if (!objDesc.isAccessible()) {
+            return new List<SObject>(); // Return empty list if not accessible
+        }
+        
         // Get field map for validation
-        Map<String, Schema.SObjectField> fieldMap = getFieldMap(objectName);
+        Map<String, Schema.SObjectField> fieldMap = objDesc.fields.getMap();
         
         // Validate fields
         if (fields == null || fields.isEmpty()) {
             throw new IllegalArgumentException('Field list cannot be empty for object ' + objectName);
         }
         
+        // Check field-level access
         for (String field : fields) {
             if (!isValidFieldName(field, fieldMap)) {
                 throw new IllegalArgumentException('Invalid field ' + field + ' for object ' + objectName);
+            }
+            
+            Schema.DescribeFieldResult fieldDescribe = fieldMap.get(field).getDescribe();
+            if (!fieldDescribe.isAccessible()) {
+                return new List<SObject>(); // Return empty list if any field is not accessible
             }
         }
         
@@ -87,8 +99,18 @@ public with sharing class AIQueryOptimizationServiceMinimal {
         
         soql += ' LIMIT ' + limitSize;
         
-        // Execute the query
-        return Database.query(soql);
+        // Execute the query with security exception handling
+        try {
+            return Database.query(soql);
+        } catch (Exception e) {
+            // If security enforcement or insufficient access exception, return empty list
+            if (e.getMessage() != null && 
+                (e.getMessage().toLowerCase().contains('security_enforced') || 
+                 e.getMessage().toLowerCase().contains('insufficient'))) {
+                return new List<SObject>();
+            }
+            throw e; // Rethrow other exceptions
+        }
     }
     
     /**
@@ -135,19 +157,5 @@ public with sharing class AIQueryOptimizationServiceMinimal {
      */
     private static Boolean isValidFieldName(String fieldName, Map<String, Schema.SObjectField> fieldMap) {
         return fieldMap.containsKey(fieldName);
-    }
-    
-    /**
-     * @description Get the field map for an object
-     * @param objectName The API name of the object
-     * @return Map of field API names to SObjectField
-     */
-    private static Map<String, Schema.SObjectField> getFieldMap(String objectName) {
-        Schema.SObjectType sObjectType = Schema.getGlobalDescribe().get(objectName);
-        if (sObjectType == null) {
-            throw new IllegalArgumentException('sObject type ' + objectName + ' does not exist');
-        }
-        
-        return sObjectType.getDescribe().fields.getMap();
     }
 }
