@@ -14,7 +14,7 @@
  * - Improved error handling with security context
  * - Multi-object support preparation
  */
-public with sharing class AgnosticRoutingEngine {
+public inherited sharing class AgnosticRoutingEngine {
     
     // Core routing constants
     private static final String HIGH_PRIORITY = 'High';
