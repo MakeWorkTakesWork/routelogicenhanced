@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+  <fullName>Enable_PII_Masking__c</fullName>
+  <label>Enable PII Masking</label>
+  <type>Checkbox</type>
+  <defaultValue>true</defaultValue>
+</CustomField>
