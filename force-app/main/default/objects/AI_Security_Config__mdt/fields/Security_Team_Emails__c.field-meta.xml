@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Security_Team_Emails__c</fullName>
+    <label>Security_Team_Emails_</label>
+    <type>LongTextArea</type>
+    <visibleLines>3</visibleLines>\n    <length>1000</length>
+</CustomField>
