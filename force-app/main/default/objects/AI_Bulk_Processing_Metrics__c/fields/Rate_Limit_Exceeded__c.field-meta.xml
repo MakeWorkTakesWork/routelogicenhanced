@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Rate_Limit_Exceeded__c</fullName>
+    <label>Rate_Limit_Exceeded_</label>
+    <type>Number</type>
+    <precision>18</precision>\n    <scale>0</scale>
+</CustomField>
