@@ -10,6 +10,5 @@
     <sharingModel>ReadWrite</sharingModel>
     <deploymentStatus>Deployed</deploymentStatus>
     <enableActivities>false</enableActivities>
-    <allowReports>false</allowReports>
-    <allowSearch>false</allowSearch>
+    <enableReports>false</enableReports>
 </CustomObject>

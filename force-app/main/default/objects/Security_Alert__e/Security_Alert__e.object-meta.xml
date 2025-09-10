@@ -2,10 +2,6 @@
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
   <label>Security Alert</label>
   <pluralLabel>Security Alerts</pluralLabel>
-  <nameField>
-    <type>Text</type>
-    <label>Event Name</label>
-  </nameField>
   <eventType>HighVolume</eventType>
   <deploymentStatus>Deployed</deploymentStatus>
   <publishBehavior>PublishAfterCommit</publishBehavior>
