@@ -3,7 +3,7 @@
  * @author RouteLogic Enhanced
  * @version 3.1.2
  */
-public with sharing class AIAlertingService {
+public inherited sharing class AIAlertingService {
     
     // Alert severity constants
     public static final String SEVERITY_CRITICAL = 'Critical';
