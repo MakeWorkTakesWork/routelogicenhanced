@@ -82,17 +82,25 @@ public with sharing class ErrorLogService {
             Database.SaveResult result = Database.insert(logsToInsert[0], false);
             
             if (!result.isSuccess()) {
-                // If we can't log to database, at least log to debug
-                // ERROR:, 'Failed to create error log: ' + result.getErrors());
-                // ERROR:, formatDebugMessage(
-                    className, errorType, errorMessage, stackTrace, additionalInfo
-                ));
+                /* If we can't persist the log, output it to debug so the
+                 * details are still available in the execution log. */
+                System.debug(formatDebugMessage(
+                    className,
+                    errorType,
+                    errorMessage,
+                    stackTrace,
+                    additionalInfo
+                ) + '\nDB Errors: ' + result.getErrors());
             }
         } catch (Exception e) {
             // Fallback to debug logging if database logging fails
-            // ERROR:, 'Error logging service failed: ' + e.getMessage());
-            // ERROR:, formatDebugMessage(
-                className, errorType, errorMessage, stackTrace, additionalInfo
+            System.debug('ErrorLogService failed: ' + e.getMessage());
+            System.debug(formatDebugMessage(
+                className,
+                errorType,
+                errorMessage,
+                stackTrace,
+                additionalInfo
             ));
         }
     }
@@ -144,6 +152,28 @@ public with sharing class ErrorLogService {
         return String.join(parts, '\n');
     }
     
+    /**
+     * @description Overload to log an error when you already have a stack trace string.
+     * @param className The class where the error occurred
+     * @param errorType The type/category of the error
+     * @param errorMessage The error message
+     * @param stackTrace The stack trace string
+     */
+    public static void logError(
+        String className,
+        String errorType,
+        String errorMessage,
+        String stackTrace
+    ) {
+        createErrorLog(
+            className,
+            errorType,
+            errorMessage,
+            stackTrace,
+            null
+        );
+    }
+
     /**
      * @description Batch delete old error logs
      * @param daysToKeep Number of days to keep error logs

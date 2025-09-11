@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Priority__c</fullName>
+<<<<<<< HEAD
+    <label>Priority_</label>
+    <type>Text</type>
+    <length>40</length>
+=======
     <externalId>false</externalId>
     <label>Priority</label>
     <required>false</required>
@@ -32,4 +37,5 @@
             </value>
         </valueSetDefinition>
     </valueSet>
+>>>>>>> origin/main
 </CustomField>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Reported_By__c</fullName>
+    <label>Reported_By_</label>
+    <type>Lookup</type>
+    <referenceTo>User</referenceTo>\n    <relationshipLabel>Reported By</relationshipLabel>\n    <relationshipName>Reported_By
+</CustomField>

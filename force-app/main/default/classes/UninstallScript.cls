@@ -3,7 +3,6 @@
  * @author RouteLogic Team
  * @date 2025-01-19
  */
-@namespaceAccessible
 global with sharing class UninstallScript implements UninstallHandler {
     
     /**

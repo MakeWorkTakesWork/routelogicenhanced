@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>AI Security Incident</label>
+    <pluralLabel>AI Security Incidents</pluralLabel>
+    <nameField>
+        <type>AutoNumber</type>
+        <label>AI Security Incident</label>
+        <displayFormat>ASI-{00000}</displayFormat>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>Private</sharingModel>
+    <enableActivities>false</enableActivities>
+    <enableReports>true</enableReports>
+</CustomObject>
