@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+<<<<<<< HEAD
     <label>AI Provider Settings</label>
     <pluralLabel>AI Provider Settings</pluralLabel>
     <nameField>
@@ -9,4 +10,58 @@
     <customSettingsType>Hierarchy</customSettingsType>
     <visibility>Public</visibility>
     <deploymentStatus>Deployed</deploymentStatus>
+=======
+    <customSettingsType>Hierarchy</customSettingsType>
+    <enableFeeds>false</enableFeeds>
+    <label>AI Provider Settings</label>
+    <visibility>Public</visibility>
+    <fields>
+        <fullName>Ada_Endpoint__c</fullName>
+        <externalId>false</externalId>
+        <label>Ada Endpoint</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Ada_Client_Id__c</fullName>
+        <externalId>false</externalId>
+        <label>Ada Client ID</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Intercom_Endpoint__c</fullName>
+        <externalId>false</externalId>
+        <label>Intercom Endpoint</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Default_Provider__c</fullName>
+        <externalId>false</externalId>
+        <label>Default Provider</label>
+        <length>100</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Enable_Provider_Failover__c</fullName>
+        <defaultValue>false</defaultValue>
+        <externalId>false</externalId>
+        <label>Enable Provider Failover</label>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+>>>>>>> origin/main
 </CustomObject>

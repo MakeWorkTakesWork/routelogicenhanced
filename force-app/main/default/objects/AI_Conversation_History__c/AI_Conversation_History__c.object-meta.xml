@@ -9,6 +9,6 @@
     </nameField>
     <deploymentStatus>Deployed</deploymentStatus>
     <sharingModel>Private</sharingModel>
-    <enableActivities>false</enableActivities>
     <enableReports>true</enableReports>
+    <enableActivities>false</enableActivities>
 </CustomObject>

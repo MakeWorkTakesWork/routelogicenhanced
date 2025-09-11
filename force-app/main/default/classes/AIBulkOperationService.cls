@@ -1,4 +1,22 @@
-public with sharing class AIBulkOperationService {
+public inherited sharing class AIBulkOperationService {
+
+    @testVisible private static Boolean isValidFieldName(String objectApiName, String fieldApiName) {
+        if (String.isBlank(objectApiName) || String.isBlank(fieldApiName)) return false;
+        if (fieldApiName.contains('.')) return false; // disallow relationship traversal
+        Schema.SObjectType sObjType = Schema.getGlobalDescribe().get(objectApiName);
+        if (sObjType == null) return false;
+        Map<String, Schema.SObjectField> fields = sObjType.getDescribe().fields.getMap();
+        return fields.containsKey(fieldApiName);
+    }
+
+    @testVisible private static Boolean areValidWhereParams(String objectApiName, Map<String, Object> whereParams) {
+        if (whereParams == null) return true;
+        for (String key : whereParams.keySet()) {
+            if (!isValidFieldName(objectApiName, key)) return false;
+        }
+        return true;
+    }
+
     private static final Integer DEFAULT_BATCH_SIZE = 200;
     private static final Integer MAX_BATCH_SIZE = 2000;
     
@@ -287,6 +305,14 @@ public with sharing class AIBulkOperationService {
         Map<String, Object> whereParams, // Changed from String whereClause to Map<String, Object>
         BulkConfig config
     ) {
+
+        // Validate dynamic inputs strictly
+        if (!isValidFieldName(objectType, fieldName)) {
+            throw new RouteLogicValidationException('Invalid or unsupported field name: ' + fieldName);
+        }
+        if (!areValidWhereParams(objectType, whereParams)) {
+            throw new RouteLogicValidationException('Invalid where parameters: only direct field API names are allowed');
+        }
         BulkOperationResult result = new BulkOperationResult();
         Long startTime = DateTime.now().getTime();
         

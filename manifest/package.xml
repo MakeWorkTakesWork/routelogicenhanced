@@ -37,6 +37,7 @@
         <members>AI_Archive_Reference__c</members>
         <members>AI_Audit_Event__c</members>
         <members>Error_Log__c</members>
+        <members>AI_Conversation_History__c</members>
         <name>CustomObject</name>
     </types>
     <types>
@@ -63,6 +64,8 @@
     <types>
         <members>AI_Config_Override__c</members>
         <members>AI_Provider_Override__c</members>
+        <members>AI_Security_Settings__c</members>
+        <members>AI_Provider_Settings__c</members>
         <name>CustomSettings</name>
     </types>
     <types>

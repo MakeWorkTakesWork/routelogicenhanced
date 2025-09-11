@@ -17,7 +17,9 @@ public with sharing class AIQueryOptimizationService {
         'Error_Log__c',
         'Case',
         'Contact',
-        'Account'
+        'Account',
+        'Lead',
+        'Opportunity'
     };
     
     // Security: Whitelist of allowed fields per object
@@ -32,6 +34,21 @@ public with sharing class AIQueryOptimizationService {
         },
         'AI_Audit_Event__c' => new Set<String>{
             'Id', 'Event_Type__c', 'Timestamp__c', 'Category__c', 'Details__c'
+        },
+        'Case' => new Set<String>{
+            'Id', 'CaseNumber', 'Subject', 'Status', 'Priority', 'CreatedDate'
+        },
+        'Account' => new Set<String>{
+            'Id', 'Name', 'AccountNumber', 'Type', 'Industry', 'CreatedDate'
+        },
+        'Contact' => new Set<String>{
+            'Id', 'FirstName', 'LastName', 'Email', 'Phone', 'CreatedDate'
+        },
+        'Lead' => new Set<String>{
+            'Id', 'FirstName', 'LastName', 'Company', 'Status', 'CreatedDate'
+        },
+        'Opportunity' => new Set<String>{
+            'Id', 'Name', 'Amount', 'StageName', 'CloseDate', 'CreatedDate'
         }
     };
     
@@ -39,7 +56,12 @@ public with sharing class AIQueryOptimizationService {
     private static final Map<String, Set<String>> ALLOWED_ORDER_FIELDS = new Map<String, Set<String>>{
         'AI_Processing_Status__c' => new Set<String>{'CreatedDate', 'Name', 'Status__c'},
         'AI_Provider_Configuration__c' => new Set<String>{'Name', 'Priority_Level__c'},
-        'AI_Audit_Event__c' => new Set<String>{'Timestamp__c', 'Event_Type__c'}
+        'AI_Audit_Event__c' => new Set<String>{'Timestamp__c', 'Event_Type__c'},
+        'Case' => new Set<String>{'CreatedDate', 'CaseNumber'},
+        'Account' => new Set<String>{'CreatedDate', 'Name'},
+        'Contact' => new Set<String>{'CreatedDate', 'LastName'},
+        'Lead' => new Set<String>{'CreatedDate', 'LastName'},
+        'Opportunity' => new Set<String>{'CreatedDate', 'CloseDate', 'Amount'}
     };
     
     // Query performance metrics
@@ -346,6 +368,10 @@ public with sharing class AIQueryOptimizationService {
                       ' FROM ' + objectName;
         
         if (!whereConditions.isEmpty()) {
+            // Validate each where condition for injection patterns
+            for (String cond : whereConditions) {
+                validateWhereClause(cond);
+            }
             query += ' WHERE ' + String.join(whereConditions, ' AND ');
         }
         
@@ -386,6 +412,24 @@ public with sharing class AIQueryOptimizationService {
     private static Boolean isOrderByAllowed(String objectName, String orderByField) {
         Set<String> allowedOrderFields = ALLOWED_ORDER_FIELDS.get(objectName);
         return allowedOrderFields != null && allowedOrderFields.contains(orderByField);
+    }
+    
+    /**
+     * @description Validate a single WHERE clause segment for common SQL-injection patterns.
+     * Throws SecurityException if a dangerous pattern is detected.
+     */
+    private static void validateWhereClause(String whereClause) {
+        if (String.isBlank(whereClause)) return;
+        String lower = whereClause.toLowerCase();
+        List<String> dangerous = new List<String>{
+            ';', '--', '/*', '*/', ' drop ', ' delete ', ' insert ', ' update ',
+            ' union ', ' exec ', ' execute ', ' xp_', ' sp_'
+        };
+        for (String p : dangerous) {
+            if (lower.contains(p)) {
+                throw new SecurityException('Invalid WHERE clause - potential SQL injection detected');
+            }
+        }
     }
     
     // Batch processing for large datasets
