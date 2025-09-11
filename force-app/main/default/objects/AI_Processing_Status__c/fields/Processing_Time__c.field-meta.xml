@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>AI_Provider__c</fullName>
-    <label>AI Provider</label>
-    <type>Text</type>
-    <length>80</length>
+    <fullName>Processing_Time__c</fullName>
+    <label>Processing Time</label>
+    <type>Number</type>
+    <precision>18</precision>
+    <scale>2</scale>
     <required>false</required>
-    <trackTrending>false</trackTrending>
     <unique>false</unique>
 </CustomField>
