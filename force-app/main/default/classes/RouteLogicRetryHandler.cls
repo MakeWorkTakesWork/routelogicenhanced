@@ -208,7 +208,7 @@ public with sharing class RouteLogicRetryHandler implements Schedulable {
             dlqEntry.jobType = jobType;
             dlqEntry.recordIds = recordIds;
             dlqEntry.jobParameters = jobParameters;
-            dlqEntry.errorMessage = RouteLogicSecurityUtils.sanitizeInput(errorMessage);
+            dlqEntry.errorMessage = RouteLogicSecurityUtils.preventXSS(errorMessage);
             dlqEntry.createdDate = DateTime.now();
             dlqEntry.retryCount = DEFAULT_MAX_RETRIES;
             

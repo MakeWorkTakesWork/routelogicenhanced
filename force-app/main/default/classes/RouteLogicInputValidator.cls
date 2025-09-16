@@ -150,15 +150,7 @@ public with sharing class RouteLogicInputValidator {
         if (String.isBlank(input)) {
             return input;
         }
-        
-        // Prefer bind variables for SOQL/SOSL. This helper only escapes single quotes
-        // to preserve content while preventing quote breaking in rare dynamic cases.
         return String.escapeSingleQuotes(input);
-        
-        // Remove SQL injection patterns
-        sanitized = sanitized.replaceAll('(?i)(union|select|insert|update|delete|drop)', '');
-        
-        return sanitized;
     }
     
     /**

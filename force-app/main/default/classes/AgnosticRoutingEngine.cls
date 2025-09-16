@@ -121,8 +121,8 @@ public inherited sharing class AgnosticRoutingEngine {
         // Basic case data with input sanitization for user-provided fields
         context.caseId = c.Id;
         context.caseNumber = c.CaseNumber;
-        context.subject = RouteLogicSecurityUtils.sanitizeInput(c.Subject);
-        context.description = RouteLogicSecurityUtils.sanitizeInput(c.Description);
+        context.subject = RouteLogicSecurityUtils.preventXSS(c.Subject);
+        context.description = RouteLogicSecurityUtils.preventXSS(c.Description);
         context.priority = c.Priority;
         context.status = c.Status;
         context.origin = c.Origin;
@@ -134,7 +134,7 @@ public inherited sharing class AgnosticRoutingEngine {
         
         // Account context with sanitization
         if (c.Account != null) {
-            context.accountName = RouteLogicSecurityUtils.sanitizeInput(c.Account.Name);
+            context.accountName = RouteLogicSecurityUtils.preventXSS(c.Account.Name);
             context.accountType = c.Account.Type;
             context.accountIndustry = c.Account.Industry;
             context.accountRevenue = c.Account.AnnualRevenue;
@@ -142,9 +142,9 @@ public inherited sharing class AgnosticRoutingEngine {
         
         // Contact context with sanitization
         if (c.Contact != null) {
-            context.contactName = RouteLogicSecurityUtils.sanitizeInput(c.Contact.Name);
-            context.contactEmail = RouteLogicSecurityUtils.sanitizeInput(c.Contact.Email);
-            context.contactPhone = RouteLogicSecurityUtils.sanitizeInput(c.Contact.Phone);
+            context.contactName = RouteLogicSecurityUtils.preventXSS(c.Contact.Name);
+            context.contactEmail = RouteLogicSecurityUtils.preventXSS(c.Contact.Email);
+            context.contactPhone = RouteLogicSecurityUtils.preventXSS(c.Contact.Phone);
         }
         
         // Owner context

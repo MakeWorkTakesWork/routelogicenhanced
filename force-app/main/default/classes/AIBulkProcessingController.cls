@@ -235,7 +235,7 @@ public with sharing class AIBulkProcessingController {
             }
             
             // Sanitize provider input
-            provider = RouteLogicSecurityUtils.sanitizeInput(provider);
+            provider = RouteLogicSecurityUtils.preventXSS(provider);
             
             // Validate provider exists and is active
             List<AIProviderCredential__c> validProviders = [

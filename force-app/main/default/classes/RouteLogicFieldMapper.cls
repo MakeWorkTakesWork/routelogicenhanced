@@ -223,7 +223,7 @@ public with sharing class RouteLogicFieldMapper {
                     return stringValue.replaceAll('\\s+', '');
                 }
                 when 'sanitize' {
-                    return RouteLogicSecurityUtils.sanitizeInput(stringValue);
+                    return RouteLogicSecurityUtils.preventXSS(stringValue);
                 }
                 when else {
                     // Custom transformation logic could be added here
