@@ -74,7 +74,7 @@ public with sharing class RouteLogicJobTracker {
         if (jobStatus != null) {
             jobStatus.status = status;
             jobStatus.lastUpdated = DateTime.now();
-            jobStatus.errorMessage = RouteLogicSecurityUtils.sanitizeInput(message);
+            jobStatus.errorMessage = RouteLogicSecurityUtils.preventXSS(message);
             
             // Update cache
             jobStatusCache.put(jobId, jobStatus);
@@ -101,7 +101,7 @@ public with sharing class RouteLogicJobTracker {
             jobStatus.processedCount = processedCount != null ? processedCount : 0;
             jobStatus.completedDate = DateTime.now();
             jobStatus.lastUpdated = DateTime.now();
-            jobStatus.errorMessage = RouteLogicSecurityUtils.sanitizeInput(message);
+            jobStatus.errorMessage = RouteLogicSecurityUtils.preventXSS(message);
             
             // Calculate duration
             if (jobStatus.createdDate != null) {
@@ -135,7 +135,7 @@ public with sharing class RouteLogicJobTracker {
             jobStatus.status = STATUS_FAILED;
             jobStatus.completedDate = DateTime.now();
             jobStatus.lastUpdated = DateTime.now();
-            jobStatus.errorMessage = RouteLogicSecurityUtils.sanitizeInput(errorMessage);
+            jobStatus.errorMessage = RouteLogicSecurityUtils.preventXSS(errorMessage);
             
             // Calculate duration
             if (jobStatus.createdDate != null) {
@@ -279,7 +279,7 @@ public with sharing class RouteLogicJobTracker {
         if (jobStatus != null && (jobStatus.status == STATUS_QUEUED || jobStatus.status == STATUS_PROCESSING)) {
             jobStatus.status = STATUS_CANCELLED;
             jobStatus.lastUpdated = DateTime.now();
-            jobStatus.errorMessage = RouteLogicSecurityUtils.sanitizeInput(reason);
+            jobStatus.errorMessage = RouteLogicSecurityUtils.preventXSS(reason);
             
             // Update cache
             jobStatusCache.put(jobId, jobStatus);
